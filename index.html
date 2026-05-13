@@ -16,7 +16,7 @@
     line-height: 1.6;
     background-color: #f8f9fa;
     color: #333;
-    max-width: 600px;
+    max-width: 640px;
     margin: 0 auto;
   }
   h2 { font-size: 1.4em; color: #000; border-left: 5px solid #007bff; padding-left: 10px; margin-bottom: 15px; }
@@ -59,7 +59,6 @@
   }
   hr { border: 0; border-top: 1px solid #ddd; margin: 15px 0; }
 
-  /* 単価表示エリア */
   .rate-display {
     background: #e8f4fd;
     border: 1px solid #bee5eb;
@@ -71,30 +70,80 @@
   }
   .rate-display span { font-weight: bold; color: #0056b3; }
 
-  /* 明細テーブル */
-  .item-row {
-    background: white;
-    border: 1px solid #eee;
-    border-radius: 6px;
-    padding: 12px;
-    margin-bottom: 8px;
-    position: relative;
+  /* グループ（国単位のまとまり） */
+  .group-block {
+    border: 2px solid #007bff;
+    border-radius: 8px;
+    margin-bottom: 16px;
+    overflow: hidden;
   }
-  .item-row .item-header {
+  .group-header {
+    background: #007bff;
+    color: white;
+    padding: 10px 14px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 8px;
-  }
-  .item-row .item-title { font-weight: bold; font-size: 0.95em; color: #007bff; }
-  .item-row .item-subtotal {
     font-weight: bold;
-    font-size: 1em;
-    color: #d63384;
-    text-align: right;
+    font-size: 0.95em;
   }
-  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+  .group-body { padding: 12px; }
+
+  /* 明細行テーブル */
+  .detail-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9em;
+    margin-top: 8px;
+  }
+  .detail-table th {
+    background: #f0f4f8;
+    padding: 8px 10px;
+    text-align: left;
+    font-size: 0.82em;
+    color: #555;
+    border-bottom: 1px solid #ddd;
+  }
+  .detail-table td {
+    padding: 8px 6px;
+    border-bottom: 1px solid #eee;
+    vertical-align: middle;
+  }
+  .detail-table tr:last-child td { border-bottom: none; }
+  .detail-table input {
+    margin-bottom: 0;
+    padding: 7px 8px;
+    font-size: 15px;
+  }
+  .detail-table .subtotal-cell {
+    text-align: right;
+    font-weight: bold;
+    color: #d63384;
+    white-space: nowrap;
+    min-width: 110px;
+  }
+  .detail-table .label-cell {
+    white-space: nowrap;
+    color: #333;
+    font-weight: bold;
+    min-width: 80px;
+  }
+  .detail-table .unit-cell {
+    color: #888;
+    font-size: 0.82em;
+    white-space: nowrap;
+    min-width: 60px;
+  }
+  .group-subtotal {
+    text-align: right;
+    font-weight: bold;
+    font-size: 0.95em;
+    margin-top: 10px;
+    padding-top: 8px;
+    border-top: 1px solid #ddd;
+    color: #333;
+  }
+  .group-subtotal .jpy { color: #d63384; font-size: 1.1em; }
 
   /* 合計エリア */
   .total-area {
@@ -120,13 +169,12 @@
     color: #d63384;
   }
 
-  .error { color: #dc3545; font-size: 0.82em; display: none; font-weight: bold; margin-top: -8px; margin-bottom: 6px; }
-
-  /* 印刷用 */
   @media print {
     button, .no-print { display: none !important; }
     body { max-width: 100%; padding: 0; background: white; }
     .card { border: 1px solid #ccc; }
+    .group-block { border: 1px solid #333; }
+    .group-header { background: #333 !important; -webkit-print-color-adjust: exact; }
   }
 </style>
 </head>
@@ -134,7 +182,7 @@
 
 <h2>外貨換算・見積アプリ</h2>
 
-<!-- ① 為替レート設定 -->
+<!-- 為替レート設定 -->
 <div class="card">
   <h3>📅 為替レート設定</h3>
   <label>日付:</label>
@@ -142,25 +190,23 @@
     <input type="date" id="date" style="margin-bottom:0; flex:1;">
     <button type="button" onclick="openRate()" style="white-space:nowrap; padding:10px 12px;">為替ページを開く</button>
   </div>
-
-  <div class="grid-3">
+  <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px;">
     <div>
       <label>USD レート</label>
-      <input type="number" id="rateUSD" step="0.0001" placeholder="例: 150.25">
+      <input type="number" id="rateUSD" step="0.0001" placeholder="例: 150.25" oninput="recalcAll()">
     </div>
     <div>
       <label>EUR レート</label>
-      <input type="number" id="rateEUR" step="0.0001" placeholder="例: 163.50">
+      <input type="number" id="rateEUR" step="0.0001" placeholder="例: 163.50" oninput="recalcAll()">
     </div>
     <div>
       <label>GBP レート</label>
-      <input type="number" id="rateGBP" step="0.0001" placeholder="例: 190.00">
+      <input type="number" id="rateGBP" step="0.0001" placeholder="例: 190.00" oninput="recalcAll()">
     </div>
   </div>
-
-  <div style="display:flex; gap:5px;">
-    <label style="margin:0; line-height:2.2; white-space:nowrap;">端数処理:</label>
-    <select id="rounding" style="margin-bottom:0;">
+  <div style="display:flex; gap:8px; align-items:center;">
+    <label style="margin:0; white-space:nowrap; line-height:2.2;">端数処理:</label>
+    <select id="rounding" style="margin-bottom:0;" onchange="recalcAll()">
       <option value="round">四捨五入</option>
       <option value="ceil">切り上げ</option>
       <option value="floor">切り捨て</option>
@@ -168,20 +214,20 @@
   </div>
 </div>
 
-<!-- ② 明細入力 -->
+<!-- 明細入力 -->
 <div class="card">
   <h3>📋 明細入力</h3>
-  <div id="itemList"></div>
-  <button class="btn-success btn-full" onclick="addItem()">＋ 明細を追加</button>
+  <div id="groupList"></div>
+  <button class="btn-success btn-full" onclick="addGroup()">＋ 国を追加</button>
 </div>
 
-<!-- ③ 合計 -->
+<!-- 合計 -->
 <div class="card">
   <h3>💰 合計</h3>
   <div id="totalArea" class="total-area">
     <div class="total-row" style="color:#888;">明細を追加してください</div>
   </div>
-  <div style="display:flex; gap:5px; margin-top:10px;">
+  <div style="display:flex; gap:5px; margin-top:10px; flex-wrap:wrap;">
     <button class="btn-primary" style="flex:1;" onclick="recalcAll()">再計算</button>
     <button class="btn-secondary" onclick="window.print()">🖨️ 印刷</button>
     <button class="btn-danger" onclick="clearAll()">全クリア</button>
@@ -214,61 +260,59 @@ const PRICE_TABLE = {
 };
 
 const COUNTRIES = Object.keys(PRICE_TABLE);
-let itemCount = 0;
+let groupCount = 0;
 
 // =========================
 // 祝日判定
 // =========================
 function isBaseHolidaySimple(date) {
-  const y = date.getFullYear();
-  const m = date.getMonth() + 1;
-  const d = date.getDate();
-  if (m === 1 && d === 1) return true;
-  if (y >= 1967 && m === 2 && d === 11) return true;
-  if (y >= 2020 && m === 2  && d === 23) return true;
-  if (y >= 1989 && y <= 2018 && m === 12 && d === 23) return true;
-  if (y >= 1989 && m === 4 && d === 29) return true;
-  if (m === 5 && d === 3) return true;
-  if (y >= 2007 && m === 5 && d === 4) return true;
-  if (m === 5 && d === 5) return true;
-  if (y >= 2016 && m === 8 && d === 11) return true;
-  if (m === 11 && d === 3) return true;
-  if (m === 11 && d === 23) return true;
-  function getNthMonday(year, month, nth) {
-    const first  = new Date(year, month - 1, 1);
-    const offset = (1 - first.getDay() + 7) % 7;
-    return 1 + offset + (nth - 1) * 7;
+  const y = date.getFullYear(), m = date.getMonth()+1, d = date.getDate();
+  if (m===1&&d===1) return true;
+  if (y>=1967&&m===2&&d===11) return true;
+  if (y>=2020&&m===2&&d===23) return true;
+  if (y>=1989&&y<=2018&&m===12&&d===23) return true;
+  if (y>=1989&&m===4&&d===29) return true;
+  if (m===5&&d===3) return true;
+  if (y>=2007&&m===5&&d===4) return true;
+  if (m===5&&d===5) return true;
+  if (y>=2016&&m===8&&d===11) return true;
+  if (m===11&&d===3) return true;
+  if (m===11&&d===23) return true;
+  function getNthMonday(year,month,nth){
+    const first=new Date(year,month-1,1);
+    const offset=(1-first.getDay()+7)%7;
+    return 1+offset+(nth-1)*7;
   }
-  if (y >= 2000 && m === 1  && d === getNthMonday(y, 1,  2)) return true;
-  if (y >= 2003 && m === 7  && d === getNthMonday(y, 7,  3)) return true;
-  if (y >= 2003 && m === 9  && d === getNthMonday(y, 9,  3)) return true;
-  if (y >= 2022 && m === 10 && d === getNthMonday(y, 10, 2)) return true;
-  if (y === 2020 && m === 7 && d === 24) return true;
-  if (y === 2021 && m === 7 && d === 23) return true;
-  if (y >= 1980 && y <= 2099) {
-    const spring = Math.floor(20.8431 + 0.242194 * (y - 1980) - Math.floor((y - 1980) / 4));
-    if (m === 3 && d === spring) return true;
-    const autumn = Math.floor(23.2488 + 0.242194 * (y - 1980) - Math.floor((y - 1980) / 4));
-    if (m === 9 && d === autumn) return true;
+  if (y>=2000&&m===1&&d===getNthMonday(y,1,2)) return true;
+  if (y>=2003&&m===7&&d===getNthMonday(y,7,3)) return true;
+  if (y>=2003&&m===9&&d===getNthMonday(y,9,3)) return true;
+  if (y>=2022&&m===10&&d===getNthMonday(y,10,2)) return true;
+  if (y===2020&&m===7&&d===24) return true;
+  if (y===2021&&m===7&&d===23) return true;
+  if (y>=1980&&y<=2099) {
+    const spring=Math.floor(20.8431+0.242194*(y-1980)-Math.floor((y-1980)/4));
+    if (m===3&&d===spring) return true;
+    const autumn=Math.floor(23.2488+0.242194*(y-1980)-Math.floor((y-1980)/4));
+    if (m===9&&d===autumn) return true;
   }
   return false;
 }
 function isKokuminNoKyujitsu(date) {
-  const w = date.getDay();
-  if (w === 0 || w === 6) return false;
-  const y = date.getFullYear(), m = date.getMonth() + 1, d = date.getDate();
-  return isBaseHolidaySimple(new Date(y, m-1, d-1)) && isBaseHolidaySimple(new Date(y, m-1, d+1));
+  const w=date.getDay();
+  if (w===0||w===6) return false;
+  const y=date.getFullYear(),m=date.getMonth()+1,d=date.getDate();
+  return isBaseHolidaySimple(new Date(y,m-1,d-1))&&isBaseHolidaySimple(new Date(y,m-1,d+1));
 }
 function isJapaneseHoliday(date) {
   if (isBaseHolidaySimple(date)) return true;
   if (isKokuminNoKyujitsu(date)) return true;
-  if (date.getDay() === 0) return false;
-  let check = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-  for (let s = 1; s <= 7; s++) {
-    check.setDate(check.getDate() - 1);
-    const cw = check.getDay();
-    if (cw === 0) return isBaseHolidaySimple(check);
-    if (!isBaseHolidaySimple(check) && !isKokuminNoKyujitsu(check)) return false;
+  if (date.getDay()===0) return false;
+  let check=new Date(date.getFullYear(),date.getMonth(),date.getDate());
+  for (let s=1;s<=7;s++) {
+    check.setDate(check.getDate()-1);
+    const cw=check.getDay();
+    if (cw===0) return isBaseHolidaySimple(check);
+    if (!isBaseHolidaySimple(check)&&!isKokuminNoKyujitsu(check)) return false;
   }
   return false;
 }
@@ -279,112 +323,161 @@ function isJapaneseHoliday(date) {
 function openRate() {
   const input = document.getElementById("date").value;
   if (!input) { alert("日付を入力してください"); return; }
-  const [iy, im, id] = input.split("-").map(Number);
-  let date = new Date(iy, im - 1, id);
+  const [iy,im,id] = input.split("-").map(Number);
+  let date = new Date(iy,im-1,id);
   const today = new Date(); today.setHours(0,0,0,0);
-  if (date > today) { alert("未来の日付は指定できません"); return; }
-  let count = 0;
-  while (count < 30) {
-    const w = date.getDay();
-    if (w === 0 || w === 6 || isJapaneseHoliday(date)) { date.setDate(date.getDate()-1); count++; }
+  if (date>today) { alert("未来の日付は指定できません"); return; }
+  let count=0;
+  while (count<30) {
+    const w=date.getDay();
+    if (w===0||w===6||isJapaneseHoliday(date)) { date.setDate(date.getDate()-1); count++; }
     else break;
   }
-  if (count >= 30) { alert("営業日の特定に失敗しました。"); return; }
-  const yy = String(date.getFullYear()).slice(-2);
-  const mm = String(date.getMonth()+1).padStart(2,'0');
-  const dd = String(date.getDate()).padStart(2,'0');
-  if (count > 0) {
-    alert("休業日のため " + date.getFullYear()+"-"+mm+"-"+dd + "（営業日）を表示します");
-  }
-  window.open("https://www.murc-kawasesouba.jp/fx/past/index.php?id=" + yy+mm+dd, "_blank");
+  if (count>=30) { alert("営業日の特定に失敗しました。"); return; }
+  const yy=String(date.getFullYear()).slice(-2);
+  const mm=String(date.getMonth()+1).padStart(2,'0');
+  const dd=String(date.getDate()).padStart(2,'0');
+  if (count>0) alert("休業日のため "+date.getFullYear()+"-"+mm+"-"+dd+"（営業日）を表示します");
+  window.open("https://www.murc-kawasesouba.jp/fx/past/index.php?id="+yy+mm+dd,"_blank");
 }
 
 // =========================
-// 明細の追加
+// 国グループの追加
 // =========================
-function addItem() {
-  itemCount++;
-  const id = itemCount;
-
-  // 国のoption生成
-  const options = COUNTRIES.map(c =>
-    `<option value="${c}">${c}</option>`
-  ).join("");
+function addGroup() {
+  groupCount++;
+  const gid = groupCount;
+  const options = COUNTRIES.map(c=>`<option value="${c}">${c}</option>`).join("");
 
   const html = `
-    <div class="item-row" id="item-${id}">
-      <div class="item-header">
-        <span class="item-title">明細 ${id}</span>
-        <button class="btn-danger" style="padding:4px 10px; font-size:13px;"
-          onclick="removeItem(${id})">削除</button>
+    <div class="group-block" id="group-${gid}">
+      <div class="group-header">
+        <span id="groupTitle-${gid}">国を選択してください</span>
+        <button class="btn-danger"
+          style="padding:4px 12px; font-size:13px; background:#fff; color:#dc3545;"
+          onclick="removeGroup(${gid})">削除</button>
       </div>
+      <div class="group-body">
+        <label>国:</label>
+        <select id="country-${gid}" onchange="onCountryChange(${gid})">
+          <option value="">-- 選択してください --</option>
+          ${options}
+        </select>
 
-      <label>国:</label>
-      <select id="country-${id}" onchange="onCountryChange(${id})">
-        <option value="">-- 選択してください --</option>
-        ${options}
-      </select>
+        <div id="rateInfo-${gid}" class="rate-display" style="display:none;"></div>
 
-      <div id="rateInfo-${id}" class="rate-display" style="display:none;"></div>
+        <!-- 明細行テーブル -->
+        <table class="detail-table" id="detailTable-${gid}" style="display:none;">
+          <thead>
+            <tr>
+              <th>項目</th>
+              <th>単価</th>
+              <th>数量</th>
+              <th>単位</th>
+              <th style="text-align:right;">外貨小計</th>
+              <th style="text-align:right;">円換算</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Man-day行 -->
+            <tr>
+              <td class="label-cell">Man-day</td>
+              <td id="price-manday-${gid}" class="unit-cell">-</td>
+              <td>
+                <input type="number" id="manday-${gid}"
+                  min="0" step="0.5" placeholder="0"
+                  oninput="calcGroup(${gid})">
+              </td>
+              <td class="unit-cell">日</td>
+              <td class="subtotal-cell" id="sub-manday-foreign-${gid}">-</td>
+              <td class="subtotal-cell" id="sub-manday-jpy-${gid}">-</td>
+            </tr>
+            <!-- 残業行 -->
+            <tr>
+              <td class="label-cell">残業</td>
+              <td id="price-overtime-${gid}" class="unit-cell">-</td>
+              <td>
+                <input type="number" id="overtime-${gid}"
+                  min="0" step="0.5" placeholder="0"
+                  oninput="calcGroup(${gid})">
+              </td>
+              <td class="unit-cell">時間</td>
+              <td class="subtotal-cell" id="sub-overtime-foreign-${gid}">-</td>
+              <td class="subtotal-cell" id="sub-overtime-jpy-${gid}">-</td>
+            </tr>
+            <!-- 走行距離行 -->
+            <tr>
+              <td class="label-cell">走行距離</td>
+              <td id="price-mileage-${gid}" class="unit-cell">-</td>
+              <td>
+                <input type="number" id="mileage-${gid}"
+                  min="0" step="1" placeholder="0"
+                  oninput="calcGroup(${gid})">
+              </td>
+              <td class="unit-cell">km</td>
+              <td class="subtotal-cell" id="sub-mileage-foreign-${gid}">-</td>
+              <td class="subtotal-cell" id="sub-mileage-jpy-${gid}">-</td>
+            </tr>
+          </tbody>
+        </table>
 
-      <div class="grid-3">
-        <div>
-          <label>Man-day 数</label>
-          <input type="number" id="manday-${id}" min="0" step="0.5" placeholder="0"
-            oninput="calcItem(${id})">
-        </div>
-        <div>
-          <label>残業時間 (h)</label>
-          <input type="number" id="overtime-${id}" min="0" step="0.5" placeholder="0"
-            oninput="calcItem(${id})">
-        </div>
-        <div>
-          <label>走行距離 (km)</label>
-          <input type="number" id="mileage-${id}" min="0" step="1" placeholder="0"
-            oninput="calcItem(${id})">
-        </div>
+        <div class="group-subtotal" id="groupSubtotal-${gid}" style="display:none;"></div>
       </div>
-
-      <div class="item-subtotal" id="subtotal-${id}">小計: -</div>
     </div>
   `;
 
-  document.getElementById("itemList").insertAdjacentHTML("beforeend", html);
-  recalcAll();
+  document.getElementById("groupList").insertAdjacentHTML("beforeend", html);
+  recalcTotal();
 }
 
 // =========================
-// 国選択時：単価情報を表示
+// 国選択時の処理
 // =========================
-function onCountryChange(id) {
-  const country = document.getElementById(`country-${id}`).value;
-  const infoEl  = document.getElementById(`rateInfo-${id}`);
+function onCountryChange(gid) {
+  const country = document.getElementById(`country-${gid}`).value;
+  const infoEl  = document.getElementById(`rateInfo-${gid}`);
+  const tableEl = document.getElementById(`detailTable-${gid}`);
+  const subEl   = document.getElementById(`groupSubtotal-${gid}`);
+  const titleEl = document.getElementById(`groupTitle-${gid}`);
 
   if (!country || !PRICE_TABLE[country]) {
-    infoEl.style.display = "none";
-    calcItem(id);
+    infoEl.style.display  = "none";
+    tableEl.style.display = "none";
+    subEl.style.display   = "none";
+    titleEl.textContent   = "国を選択してください";
+    recalcTotal();
     return;
   }
 
   const p = PRICE_TABLE[country];
+  titleEl.textContent = `${country}　（${p.currency}）`;
+
+  // 単価情報表示
   infoEl.style.display = "block";
   infoEl.innerHTML =
     `通貨: <span>${p.currency}</span> ／ ` +
-    `Man-day: <span>${p.manday.toFixed(2)}</span> ／ ` +
-    `残業(/h): <span>${p.hourly.toFixed(2)}</span> ／ ` +
+    `Man-day単価: <span>${p.manday.toFixed(2)}</span> ／ ` +
+    `残業単価(/h): <span>${p.hourly.toFixed(2)}</span> ／ ` +
     `Mileage(/km): <span>${p.mileage.toFixed(2)}</span>`;
 
-  calcItem(id);
+  // テーブルの単価セルを更新
+  document.getElementById(`price-manday-${gid}`).textContent   = `${p.currency} ${p.manday.toFixed(2)}`;
+  document.getElementById(`price-overtime-${gid}`).textContent = `${p.currency} ${p.hourly.toFixed(2)}`;
+  document.getElementById(`price-mileage-${gid}`).textContent  = `${p.currency} ${p.mileage.toFixed(2)}`;
+
+  tableEl.style.display = "table";
+  subEl.style.display   = "block";
+
+  calcGroup(gid);
 }
 
 // =========================
-// 1明細の計算
+// グループ単位の計算
 // =========================
 function getRate(currency) {
-  const rounding = document.getElementById("rounding").value;
-  const rateEl = document.getElementById("rate" + currency);
-  if (!rateEl) return null;
-  const v = parseFloat(rateEl.value);
+  const el = document.getElementById("rate" + currency);
+  if (!el) return null;
+  const v = parseFloat(el.value);
   return (isNaN(v) || v <= 0) ? null : v;
 }
 
@@ -394,61 +487,73 @@ function roundValue(v, mode) {
   return Math.round(v);
 }
 
-function calcItem(id) {
-  const country  = document.getElementById(`country-${id}`).value;
-  const subtotal = document.getElementById(`subtotal-${id}`);
-  const rounding = document.getElementById("rounding").value;
-
-  if (!country || !PRICE_TABLE[country]) {
-    subtotal.textContent = "小計: -";
-    recalcTotal();
-    return;
-  }
+function calcGroup(gid) {
+  const country = document.getElementById(`country-${gid}`).value;
+  if (!country || !PRICE_TABLE[country]) { recalcTotal(); return; }
 
   const p        = PRICE_TABLE[country];
-  const manday   = parseFloat(document.getElementById(`manday-${id}`).value)   || 0;
-  const overtime = parseFloat(document.getElementById(`overtime-${id}`).value) || 0;
-  const mileage  = parseFloat(document.getElementById(`mileage-${id}`).value)  || 0;
+  const rounding = document.getElementById("rounding").value;
+  const rate     = getRate(p.currency);
+  const cur      = p.currency;
 
-  const foreignTotal =
-    manday   * p.manday  +
-    overtime * p.hourly  +
-    mileage  * p.mileage;
+  const manday   = parseFloat(document.getElementById(`manday-${gid}`).value)   || 0;
+  const overtime = parseFloat(document.getElementById(`overtime-${gid}`).value) || 0;
+  const mileage  = parseFloat(document.getElementById(`mileage-${gid}`).value)  || 0;
 
-  const rate = getRate(p.currency);
+  // 各行の外貨小計
+  const subManday   = manday   * p.manday;
+  const subOvertime = overtime * p.hourly;
+  const subMileage  = mileage  * p.mileage;
+  const totalForeign = subManday + subOvertime + subMileage;
 
-  let text = `外貨小計: ${p.currency} ${foreignTotal.toFixed(2)}`;
+  // 外貨小計セルを更新
+  const fmtF = (v) => v > 0 ? `${cur} ${v.toFixed(2)}` : `-`;
+  document.getElementById(`sub-manday-foreign-${gid}`).textContent   = fmtF(subManday);
+  document.getElementById(`sub-overtime-foreign-${gid}`).textContent = fmtF(subOvertime);
+  document.getElementById(`sub-mileage-foreign-${gid}`).textContent  = fmtF(subMileage);
 
+  // 円換算セルを更新
+  const fmtJ = (v) => {
+    if (rate === null) return `<span style="color:#aaa;">-</span>`;
+    if (v === 0) return `-`;
+    return `${roundValue(v * rate, rounding).toLocaleString()} 円`;
+  };
+  document.getElementById(`sub-manday-jpy-${gid}`).innerHTML   = fmtJ(subManday);
+  document.getElementById(`sub-overtime-jpy-${gid}`).innerHTML = fmtJ(subOvertime);
+  document.getElementById(`sub-mileage-jpy-${gid}`).innerHTML  = fmtJ(subMileage);
+
+  // グループ小計
+  const subEl = document.getElementById(`groupSubtotal-${gid}`);
+  let subHtml = `合計: <span style="color:#0056b3;">${cur} ${totalForeign.toFixed(2)}</span>`;
   if (rate !== null) {
-    const jpy = roundValue(foreignTotal * rate, rounding);
-    text += ` → <span style="color:#d63384;">${jpy.toLocaleString()} 円</span>`;
+    const totalJpy = roundValue(totalForeign * rate, rounding);
+    subHtml += ` → <span class="jpy">${totalJpy.toLocaleString()} 円</span>`;
   } else {
-    text += ` <span style="color:#999;">（${p.currency}レートを入力してください）</span>`;
+    subHtml += ` <span style="color:#999;">（${cur}レートを入力してください）</span>`;
   }
+  subEl.innerHTML = subHtml;
 
-  subtotal.innerHTML = text;
   recalcTotal();
 }
 
 // =========================
-// 全体の合計計算
+// 全体合計の計算
 // =========================
 function recalcAll() {
-  for (let i = 1; i <= itemCount; i++) {
-    if (document.getElementById(`item-${i}`)) calcItem(i);
+  for (let i = 1; i <= groupCount; i++) {
+    if (document.getElementById(`group-${i}`)) calcGroup(i);
   }
 }
 
 function recalcTotal() {
-  const rounding = document.getElementById("rounding").value;
+  const rounding  = document.getElementById("rounding").value;
   const totalArea = document.getElementById("totalArea");
 
-  // 通貨ごとに外貨小計を集計
-  const foreignSums = {};  // { USD: 0, EUR: 0, GBP: 0 }
+  const foreignSums = {};
   let hasAny = false;
 
-  for (let i = 1; i <= itemCount; i++) {
-    const el = document.getElementById(`item-${i}`);
+  for (let i = 1; i <= groupCount; i++) {
+    const el = document.getElementById(`group-${i}`);
     if (!el) continue;
     const country = document.getElementById(`country-${i}`).value;
     if (!country || !PRICE_TABLE[country]) continue;
@@ -457,8 +562,8 @@ function recalcTotal() {
     const manday   = parseFloat(document.getElementById(`manday-${i}`).value)   || 0;
     const overtime = parseFloat(document.getElementById(`overtime-${i}`).value) || 0;
     const mileage  = parseFloat(document.getElementById(`mileage-${i}`).value)  || 0;
+    const sub      = manday * p.manday + overtime * p.hourly + mileage * p.mileage;
 
-    const sub = manday * p.manday + overtime * p.hourly + mileage * p.mileage;
     foreignSums[p.currency] = (foreignSums[p.currency] || 0) + sub;
     hasAny = true;
   }
@@ -469,52 +574,41 @@ function recalcTotal() {
   }
 
   let html = "";
-  let grandTotal = 0;
+  let grandTotal  = 0;
   let allConverted = true;
 
   for (const [cur, sum] of Object.entries(foreignSums)) {
     const rate = getRate(cur);
-    const foreignStr = `${cur} ${sum.toFixed(2)}`;
     if (rate !== null) {
       const jpy = roundValue(sum * rate, rounding);
       grandTotal += jpy;
       html += `
         <div class="total-row">
-          <span>${foreignStr}</span>
+          <span>${cur} ${sum.toFixed(2)}</span>
           <span>${jpy.toLocaleString()} 円</span>
         </div>`;
     } else {
       allConverted = false;
       html += `
         <div class="total-row">
-          <span>${foreignStr}</span>
-          <span style="color:#999;">${cur}レート未入力</span>
+          <span>${cur} ${sum.toFixed(2)}</span>
+          <span style="color:#999;">${cur} レート未入力</span>
         </div>`;
     }
   }
 
-  if (allConverted) {
-    html += `
-      <div class="total-row grand">
-        <span>合計</span>
-        <span>${grandTotal.toLocaleString()} 円</span>
-      </div>`;
-  } else {
-    html += `
-      <div class="total-row grand" style="color:#999;">
-        <span>合計</span>
-        <span>レートを全て入力してください</span>
-      </div>`;
-  }
+  html += allConverted
+    ? `<div class="total-row grand"><span>合計</span><span>${grandTotal.toLocaleString()} 円</span></div>`
+    : `<div class="total-row grand" style="color:#999;"><span>合計</span><span>レートを全て入力してください</span></div>`;
 
   totalArea.innerHTML = html;
 }
 
 // =========================
-// 明細削除
+// グループ削除
 // =========================
-function removeItem(id) {
-  const el = document.getElementById(`item-${id}`);
+function removeGroup(gid) {
+  const el = document.getElementById(`group-${gid}`);
   if (el) el.remove();
   recalcTotal();
 }
@@ -524,11 +618,11 @@ function removeItem(id) {
 // =========================
 function clearAll() {
   if (!confirm("全ての明細とレートをクリアしますか？")) return;
-  document.getElementById("itemList").innerHTML = "";
-  document.getElementById("rateUSD").value = "";
-  document.getElementById("rateEUR").value = "";
-  document.getElementById("rateGBP").value = "";
-  itemCount = 0;
+  document.getElementById("groupList").innerHTML = "";
+  ["rateUSD","rateEUR","rateGBP"].forEach(id => {
+    document.getElementById(id).value = "";
+  });
+  groupCount = 0;
   recalcTotal();
 }
 
