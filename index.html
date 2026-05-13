@@ -3,15 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="外貨換算">
 <meta name="theme-color" content="#f8f9fa">
-
 <title>外貨換算アプリ</title>
 <style>
-  /* 全体のレイアウト調整 */
   body { 
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
     padding: 15px; 
@@ -23,10 +20,8 @@
   }
   h2 { font-size: 1.4em; color: #000; border-left: 5px solid #007bff; padding-left: 10px; }
   h3 { font-size: 1.2em; margin-top: 20px; }
-
   div { margin-bottom: 12px; }
   label { display: block; font-weight: bold; font-size: 0.9em; margin-bottom: 2px; }
-  
   input, select { 
     width: 100%; 
     box-sizing: border-box; 
@@ -36,7 +31,6 @@
     border-radius: 6px;
     background: #fff;
   }
-
   button { 
     padding: 12px 15px; 
     font-size: 16px; 
@@ -48,7 +42,6 @@
     transition: background 0.2s;
     -webkit-tap-highlight-color: transparent;
   }
-  
   button[onclick="calculate()"] {
     background-color: #007bff;
     color: white;
@@ -57,7 +50,6 @@
     margin-top: 10px;
   }
   button:active { opacity: 0.7; }
-
   .log-item { 
     background: white;
     border: 1px solid #eee;
@@ -68,11 +60,8 @@
     word-break: break-all;
   }
   .error { color: #dc3545; font-size: 0.85em; margin-top: 4px; display: none; font-weight: bold; }
-  
   hr { border: 0; border-top: 1px solid #ddd; margin: 20px 0; }
-
   #result { color: #d63384; font-size: 1.5em; font-weight: bold; }
-
   .button-group { display: flex; flex-wrap: wrap; gap: 5px; }
   .button-group button { flex: 1; min-width: 100px; }
 </style>
@@ -139,43 +128,75 @@
 const logList = [];
 
 // =========================
-// 祝日判定：固定祝日・ハッピーマンデー・春分秋分のみ（振替・国民の休日を含まない）
+// 祝日判定：固定祝日・ハッピーマンデー・春分秋分のみ
+// （振替休日・国民の休日を含まない）
 // =========================
 function isBaseHolidaySimple(date) {
   const y = date.getFullYear();
   const m = date.getMonth() + 1;
   const d = date.getDate();
 
+  // 元日
   if (m === 1 && d === 1) return true;
+
+  // 建国記念の日（1967年以降）
   if (y >= 1967 && m === 2 && d === 11) return true;
-  if (y >= 2020 && m === 2 && d === 23) return true;
+
+  // 天皇誕生日：令和以降 2/23、平成 12/23
+  if (y >= 2020 && m === 2  && d === 23) return true;
   if (y >= 1989 && y <= 2018 && m === 12 && d === 23) return true;
+
+  // 4月29日：昭和の日（2007〜）／みどりの日（1989〜2006）
   if (y >= 1989 && m === 4 && d === 29) return true;
+
+  // 憲法記念日
   if (m === 5 && d === 3) return true;
+
+  // みどりの日（2007年以降は5/4）
   if (y >= 2007 && m === 5 && d === 4) return true;
+
+  // こどもの日
   if (m === 5 && d === 5) return true;
+
+  // 山の日（2016年以降）
   if (y >= 2016 && m === 8 && d === 11) return true;
+
+  // 文化の日
   if (m === 11 && d === 3) return true;
+
+  // 勤労感謝の日
   if (m === 11 && d === 23) return true;
 
+  // ハッピーマンデー
   function getNthMonday(year, month, nth) {
-    const first = new Date(year, month - 1, 1);
+    const first  = new Date(year, month - 1, 1);
     const offset = (1 - first.getDay() + 7) % 7;
     return 1 + offset + (nth - 1) * 7;
   }
-  if (y >= 2000 && m === 1 && d === getNthMonday(y, 1, 2)) return true;
-  if (y >= 2003 && m === 7 && d === getNthMonday(y, 7, 3)) return true;
-  if (y >= 2003 && m === 9 && d === getNthMonday(y, 9, 3)) return true;
+
+  // 成人の日（2000年以降：1月第2月曜）
+  if (y >= 2000 && m === 1  && d === getNthMonday(y, 1,  2)) return true;
+
+  // 海の日（2003年以降：7月第3月曜）
+  if (y >= 2003 && m === 7  && d === getNthMonday(y, 7,  3)) return true;
+
+  // 敬老の日（2003年以降：9月第3月曜）
+  if (y >= 2003 && m === 9  && d === getNthMonday(y, 9,  3)) return true;
+
+  // スポーツの日（2022年以降：10月第2月曜／2020・2021は五輪特例）
   if (y >= 2022 && m === 10 && d === getNthMonday(y, 10, 2)) return true;
   if (y === 2020 && m === 7 && d === 24) return true;
   if (y === 2021 && m === 7 && d === 23) return true;
 
+  // 春分の日・秋分の日（近似計算、1980〜2099年対応）
   if (y >= 1980 && y <= 2099) {
     const spring = Math.floor(20.8431 + 0.242194 * (y - 1980) - Math.floor((y - 1980) / 4));
     if (m === 3 && d === spring) return true;
+
     const autumn = Math.floor(23.2488 + 0.242194 * (y - 1980) - Math.floor((y - 1980) / 4));
     if (m === 9 && d === autumn) return true;
   }
+
   return false;
 }
 
@@ -185,28 +206,56 @@ function isBaseHolidaySimple(date) {
 function isKokuminNoKyujitsu(date) {
   const w = date.getDay();
   if (w === 0 || w === 6) return false;
-  const prev = new Date(date.getFullYear(), date.getMonth(), date.getDate() - 1);
-  const next = new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1);
+
+  const y = date.getFullYear();
+  const m = date.getMonth() + 1;
+  const d = date.getDate();
+
+  const prev = new Date(y, m - 1, d - 1);
+  const next = new Date(y, m - 1, d + 1);
+
   return isBaseHolidaySimple(prev) && isBaseHolidaySimple(next);
 }
 
 // =========================
-// 振替休日を含む最終判定
+// 振替休日を含む最終的な祝日判定
+//
+// 【振替休日のルール】
+//   祝日が日曜日にあたるとき、その後の最初の
+//   「祝日でも日曜でもない日」が振替休日になる。
+//   祝日が連続する場合は連鎖する。
 // =========================
 function isJapaneseHoliday(date) {
+  // ① 基本祝日チェック
   if (isBaseHolidaySimple(date)) return true;
+
+  // ② 国民の休日チェック
   if (isKokuminNoKyujitsu(date)) return true;
 
+  // ③ 振替休日チェック
+  //    日曜日は振替休日にならない
   const w = date.getDay();
   if (w === 0) return false;
 
+  //    1日ずつ遡り、日曜日に到達したとき
+  //    その日曜が祝日なら振替休日の連鎖が発生している
   let checkDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+
   for (let steps = 1; steps <= 7; steps++) {
     checkDate.setDate(checkDate.getDate() - 1);
     const cw = checkDate.getDay();
-    if (cw === 0) return isBaseHolidaySimple(checkDate);
-    if (!isBaseHolidaySimple(checkDate) && !isKokuminNoKyujitsu(checkDate)) return false;
+
+    if (cw === 0) {
+      // 日曜日に到達：その日曜が祝日なら振替休日
+      return isBaseHolidaySimple(checkDate);
+    }
+
+    // 途中の日（月〜土）が祝日・国民の休日でなければ連鎖が切れる
+    if (!isBaseHolidaySimple(checkDate) && !isKokuminNoKyujitsu(checkDate)) {
+      return false;
+    }
   }
+
   return false;
 }
 
@@ -215,15 +264,28 @@ function isJapaneseHoliday(date) {
 // =========================
 function openRate() {
   const input = document.getElementById("date").value;
-  if (!input) { alert("日付を入力してください"); return; }
+  if (!input) {
+    alert("日付を入力してください");
+    return;
+  }
+
+  // タイムゾーン問題を回避：ローカル時刻で日付オブジェクトを生成
   const [iy, im, id] = input.split("-").map(Number);
   let date = new Date(iy, im - 1, id);
+
+  // today も日付部分のみで比較
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  if (date > today) { alert("未来の日付は指定できません"); return; }
 
+  if (date > today) {
+    alert("未来の日付は指定できません");
+    return;
+  }
+
+  // 休業日（土日・祝日）なら直前の営業日に遡る（最大30日）
   let count = 0;
   const MAX_RETRY = 30;
+
   while (count < MAX_RETRY) {
     const w = date.getDay();
     if (w === 0 || w === 6 || isJapaneseHoliday(date)) {
@@ -233,7 +295,11 @@ function openRate() {
       break;
     }
   }
-  if (count >= MAX_RETRY) { alert("営業日の特定に失敗しました。"); return; }
+
+  if (count >= MAX_RETRY) {
+    alert("営業日の特定に失敗しました。日付を確認してください。");
+    return;
+  }
 
   const yy = String(date.getFullYear()).slice(-2);
   const mm = String(date.getMonth() + 1).padStart(2, '0');
@@ -241,9 +307,13 @@ function openRate() {
   const url = "https://www.murc-kawasesouba.jp/fx/past/index.php?id=" + yy + mm + dd;
 
   if (count > 0) {
-    const disp = date.getFullYear() + "-" + mm + "-" + dd;
+    const disp =
+      date.getFullYear() + "-" +
+      String(date.getMonth() + 1).padStart(2, '0') + "-" +
+      String(date.getDate()).padStart(2, '0');
     alert("休業日のため " + disp + "（営業日）を表示します");
   }
+
   window.open(url, "_blank");
 }
 
@@ -251,28 +321,38 @@ function openRate() {
 // 計算
 // =========================
 function roundValue(v, mode) {
-  if (mode === "ceil") return Math.ceil(v);
+  if (mode === "ceil")  return Math.ceil(v);
   if (mode === "floor") return Math.floor(v);
   return Math.round(v);
 }
 
 function showError(id, visible) {
-  document.getElementById(id).style.display = visible ? "block" : "none";
+  // ✅ inline：エラーメッセージをラベルの横に自然に表示
+  document.getElementById(id).style.display = visible ? "inline" : "none";
 }
 
 function calculate() {
-  const rateInput = document.getElementById("rate");
+  const rateInput   = document.getElementById("rate");
   const amountInput = document.getElementById("amount");
-  const rate = parseFloat(rateInput.value);
-  const amount = parseFloat(amountInput.value);
-  const rounding = document.getElementById("rounding").value;
+  const rate        = parseFloat(rateInput.value);
+  const amount      = parseFloat(amountInput.value);
+  const rounding    = document.getElementById("rounding").value;
 
   let hasError = false;
-  if (isNaN(rate) || rate <= 0) { showError("rateError", true); hasError = true; } 
-  else { showError("rateError", false); }
-  
-  if (isNaN(amount) || amount <= 0) { showError("amountError", true); hasError = true; } 
-  else { showError("amountError", false); }
+
+  if (isNaN(rate) || rate <= 0) {
+    showError("rateError", true);
+    hasError = true;
+  } else {
+    showError("rateError", false);
+  }
+
+  if (isNaN(amount) || amount <= 0) {
+    showError("amountError", true);
+    hasError = true;
+  } else {
+    showError("amountError", false);
+  }
 
   if (hasError) return;
 
@@ -280,15 +360,19 @@ function calculate() {
   document.getElementById("result").textContent = result.toLocaleString();
 
   const date = document.getElementById("date").value || "-";
-  const cur = document.getElementById("currency").value;
+  const cur  = document.getElementById("currency").value;
 
   logList.push(`${date} ${cur} ${amount} × ${rate} = ${result.toLocaleString()} 円`);
   renderLog();
 
-  amountInput.select();
+  // ✅ focus を先に呼び、select は setTimeout でラップして動作を安定させる
   amountInput.focus();
+  setTimeout(() => amountInput.select(), 0);
 }
 
+// =========================
+// UI操作
+// =========================
 function renderLog() {
   const log = document.getElementById("log");
   log.innerHTML = "";
@@ -317,12 +401,20 @@ function clearLog() {
   renderLog();
 }
 
+// =========================
+// キー操作
+// =========================
 document.addEventListener("keydown", function(e) {
-  const tag = document.activeElement.tagName;
+  const tag     = document.activeElement.tagName;
   const isInput = (tag === "INPUT" || tag === "TEXTAREA");
-  if (e.key === "Enter") calculate();
-  else if (e.key === "Delete" && !isInput) clearInput();
-  else if (e.key === "Escape") clearLog();
+
+  if (e.key === "Enter") {
+    calculate();
+  } else if (e.key === "Delete" && !isInput) {
+    clearInput();
+  } else if (e.key === "Escape") {
+    clearLog();
+  }
 });
 </script>
 
