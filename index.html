@@ -48,6 +48,7 @@
   .btn-success   { background-color: #28a745; color: white; }
   .btn-danger    { background-color: #dc3545; color: white; }
   .btn-secondary { background-color: #6c757d; color: white; }
+  .btn-warning   { background-color: #fd7e14; color: white; font-weight: bold; }
   .btn-full { width: 100%; margin-top: 5px; }
 
   .card {
@@ -57,7 +58,6 @@
     padding: 15px;
     margin-bottom: 15px;
   }
-  hr { border: 0; border-top: 1px solid #ddd; margin: 15px 0; }
 
   .rate-display {
     background: #e8f4fd;
@@ -70,7 +70,6 @@
   }
   .rate-display span { font-weight: bold; color: #0056b3; }
 
-  /* グループ（国単位のまとまり） */
   .group-block {
     border: 2px solid #007bff;
     border-radius: 8px;
@@ -89,12 +88,11 @@
   }
   .group-body { padding: 12px; }
 
-  /* 明細行テーブル */
   .detail-table {
     width: 100%;
     border-collapse: collapse;
     font-size: 0.9em;
-    margin-top: 8px;
+    margin-top: 4px;
   }
   .detail-table th {
     background: #f0f4f8;
@@ -110,42 +108,34 @@
     vertical-align: middle;
   }
   .detail-table tr:last-child td { border-bottom: none; }
-  .detail-table input {
-    margin-bottom: 0;
-    padding: 7px 8px;
-    font-size: 15px;
-  }
-  .detail-table .subtotal-cell {
-    text-align: right;
+  .detail-table input { margin-bottom: 0; padding: 7px 8px; font-size: 15px; }
+  .subtotal-cell { text-align: right; font-weight: bold; color: #d63384; white-space: nowrap; min-width: 110px; }
+  .label-cell    { white-space: nowrap; color: #333; font-weight: bold; min-width: 80px; }
+  .unit-cell     { color: #888; font-size: 0.82em; white-space: nowrap; min-width: 60px; }
+
+  .section-label {
+    font-size: 0.78em;
     font-weight: bold;
-    color: #d63384;
-    white-space: nowrap;
-    min-width: 110px;
+    color: #fff;
+    background: #6c757d;
+    padding: 3px 10px;
+    border-radius: 3px;
+    margin: 10px 0 4px;
+    display: inline-block;
   }
-  .detail-table .label-cell {
-    white-space: nowrap;
-    color: #333;
-    font-weight: bold;
-    min-width: 80px;
-  }
-  .detail-table .unit-cell {
-    color: #888;
-    font-size: 0.82em;
-    white-space: nowrap;
-    min-width: 60px;
-  }
+  .section-label.expense { background: #fd7e14; }
+
   .group-subtotal {
     text-align: right;
     font-weight: bold;
     font-size: 0.95em;
     margin-top: 10px;
     padding-top: 8px;
-    border-top: 1px solid #ddd;
+    border-top: 2px solid #ddd;
     color: #333;
   }
   .group-subtotal .jpy { color: #d63384; font-size: 1.1em; }
 
-  /* 合計エリア */
   .total-area {
     background: #fff3cd;
     border: 1px solid #ffc107;
@@ -169,12 +159,58 @@
     color: #d63384;
   }
 
+  /* レート種別タブ */
+  .rate-type-tabs {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 10px;
+  }
+  .rate-type-tabs button {
+    flex: 1;
+    padding: 8px;
+    font-size: 14px;
+    background: #e0e0e0;
+    color: #333;
+    border-radius: 6px;
+    border: 2px solid transparent;
+    font-weight: bold;
+  }
+  .rate-type-tabs button.active {
+    background: #007bff;
+    color: white;
+    border-color: #0056b3;
+  }
+
+  /* コピー用テキストエリア */
+  .copy-area {
+    background: #f8f9fa;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    padding: 12px;
+    font-family: monospace;
+    font-size: 0.88em;
+    white-space: pre;
+    overflow-x: auto;
+    line-height: 1.8;
+    margin-top: 10px;
+    color: #333;
+    display: none;
+  }
+  .copy-success {
+    color: #28a745;
+    font-size: 0.85em;
+    font-weight: bold;
+    margin-left: 8px;
+    display: none;
+  }
+
   @media print {
-    button, .no-print { display: none !important; }
+    button, .no-print, .copy-area { display: none !important; }
     body { max-width: 100%; padding: 0; background: white; }
     .card { border: 1px solid #ccc; }
     .group-block { border: 1px solid #333; }
-    .group-header { background: #333 !important; -webkit-print-color-adjust: exact; }
+    .group-header { background: #333 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .section-label { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   }
 </style>
 </head>
@@ -185,11 +221,25 @@
 <!-- 為替レート設定 -->
 <div class="card">
   <h3>📅 為替レート設定</h3>
+
   <label>日付:</label>
   <div style="display:flex; gap:8px; align-items:center; margin-bottom:10px;">
     <input type="date" id="date" style="margin-bottom:0; flex:1;">
     <button type="button" onclick="openRate()" style="white-space:nowrap; padding:10px 12px;">為替ページを開く</button>
   </div>
+
+  <!-- レート種別選択 -->
+  <label>レート種別:</label>
+  <div class="rate-type-tabs no-print">
+    <button id="tab-TTS" class="active" onclick="selectRateType('TTS')">TTS（売レート）</button>
+    <button id="tab-TTB" onclick="selectRateType('TTB')">TTB（買レート）</button>
+    <button id="tab-TTM" onclick="selectRateType('TTM')">TTM（仲値）</button>
+  </div>
+  <!-- 印刷用：種別テキスト表示 -->
+  <div id="rateTypeLabel" style="font-weight:bold; font-size:0.9em; color:#007bff; margin-bottom:6px; display:none;">
+    適用レート：TTS
+  </div>
+
   <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px;">
     <div>
       <label>USD レート</label>
@@ -204,6 +254,7 @@
       <input type="number" id="rateGBP" step="0.0001" placeholder="例: 190.00" oninput="recalcAll()">
     </div>
   </div>
+
   <div style="display:flex; gap:8px; align-items:center;">
     <label style="margin:0; white-space:nowrap; line-height:2.2;">端数処理:</label>
     <select id="rounding" style="margin-bottom:0;" onchange="recalcAll()">
@@ -228,10 +279,21 @@
     <div class="total-row" style="color:#888;">明細を追加してください</div>
   </div>
   <div style="display:flex; gap:5px; margin-top:10px; flex-wrap:wrap;">
-    <button class="btn-primary" style="flex:1;" onclick="recalcAll()">再計算</button>
+    <button class="btn-primary"   style="flex:1;" onclick="recalcAll()">再計算</button>
     <button class="btn-secondary" onclick="window.print()">🖨️ 印刷</button>
-    <button class="btn-danger" onclick="clearAll()">全クリア</button>
+    <button class="btn-danger"    onclick="clearAll()">全クリア</button>
   </div>
+</div>
+
+<!-- コピー用テキスト -->
+<div class="card no-print">
+  <h3>📋 コピー用テキスト</h3>
+  <div style="display:flex; gap:5px; align-items:center; flex-wrap:wrap;">
+    <button class="btn-warning" onclick="generateCopyText()">テキストを生成</button>
+    <button class="btn-success" id="copyBtn" onclick="copyToClipboard()" style="display:none;">📋 クリップボードにコピー</button>
+    <span class="copy-success" id="copySuccess">✅ コピーしました！</span>
+  </div>
+  <div class="copy-area" id="copyArea"></div>
 </div>
 
 <script>
@@ -259,60 +321,89 @@ const PRICE_TABLE = {
   "USA":       { currency: "USD", manday: 965.00, hourly: 150.78, mileage: 0.65 },
 };
 
+const CHINA_EXPENSE = {
+  dailyAllowance: 20.00,
+  accommodation:  58.00,
+};
+
 const COUNTRIES = Object.keys(PRICE_TABLE);
-let groupCount = 0;
+let groupCount  = 0;
+let currentRateType = "TTS"; // TTS / TTB / TTM
+
+// =========================
+// レート種別選択
+// =========================
+function selectRateType(type) {
+  currentRateType = type;
+  ["TTS","TTB","TTM"].forEach(t => {
+    document.getElementById(`tab-${t}`).classList.toggle("active", t === type);
+  });
+  // 印刷用ラベル更新
+  const labelMap = { TTS: "TTS（売レート）", TTB: "TTB（買レート）", TTM: "TTM（仲値）" };
+  document.getElementById("rateTypeLabel").textContent = `適用レート：${labelMap[type]}`;
+}
+
+// =========================
+// 日付を日本語形式に変換
+// 例："2025-05-12" → "2025年5月12日"
+// =========================
+function formatDateJa(dateStr) {
+  if (!dateStr) return "日付未入力";
+  const [y, m, d] = dateStr.split("-").map(Number);
+  return `${y}年${m}月${d}日`;
+}
 
 // =========================
 // 祝日判定
 // =========================
 function isBaseHolidaySimple(date) {
-  const y = date.getFullYear(), m = date.getMonth()+1, d = date.getDate();
-  if (m===1&&d===1) return true;
-  if (y>=1967&&m===2&&d===11) return true;
-  if (y>=2020&&m===2&&d===23) return true;
-  if (y>=1989&&y<=2018&&m===12&&d===23) return true;
-  if (y>=1989&&m===4&&d===29) return true;
-  if (m===5&&d===3) return true;
-  if (y>=2007&&m===5&&d===4) return true;
-  if (m===5&&d===5) return true;
-  if (y>=2016&&m===8&&d===11) return true;
-  if (m===11&&d===3) return true;
-  if (m===11&&d===23) return true;
+  const y=date.getFullYear(),m=date.getMonth()+1,d=date.getDate();
+  if(m===1&&d===1)return true;
+  if(y>=1967&&m===2&&d===11)return true;
+  if(y>=2020&&m===2&&d===23)return true;
+  if(y>=1989&&y<=2018&&m===12&&d===23)return true;
+  if(y>=1989&&m===4&&d===29)return true;
+  if(m===5&&d===3)return true;
+  if(y>=2007&&m===5&&d===4)return true;
+  if(m===5&&d===5)return true;
+  if(y>=2016&&m===8&&d===11)return true;
+  if(m===11&&d===3)return true;
+  if(m===11&&d===23)return true;
   function getNthMonday(year,month,nth){
     const first=new Date(year,month-1,1);
     const offset=(1-first.getDay()+7)%7;
     return 1+offset+(nth-1)*7;
   }
-  if (y>=2000&&m===1&&d===getNthMonday(y,1,2)) return true;
-  if (y>=2003&&m===7&&d===getNthMonday(y,7,3)) return true;
-  if (y>=2003&&m===9&&d===getNthMonday(y,9,3)) return true;
-  if (y>=2022&&m===10&&d===getNthMonday(y,10,2)) return true;
-  if (y===2020&&m===7&&d===24) return true;
-  if (y===2021&&m===7&&d===23) return true;
-  if (y>=1980&&y<=2099) {
+  if(y>=2000&&m===1&&d===getNthMonday(y,1,2))return true;
+  if(y>=2003&&m===7&&d===getNthMonday(y,7,3))return true;
+  if(y>=2003&&m===9&&d===getNthMonday(y,9,3))return true;
+  if(y>=2022&&m===10&&d===getNthMonday(y,10,2))return true;
+  if(y===2020&&m===7&&d===24)return true;
+  if(y===2021&&m===7&&d===23)return true;
+  if(y>=1980&&y<=2099){
     const spring=Math.floor(20.8431+0.242194*(y-1980)-Math.floor((y-1980)/4));
-    if (m===3&&d===spring) return true;
+    if(m===3&&d===spring)return true;
     const autumn=Math.floor(23.2488+0.242194*(y-1980)-Math.floor((y-1980)/4));
-    if (m===9&&d===autumn) return true;
+    if(m===9&&d===autumn)return true;
   }
   return false;
 }
-function isKokuminNoKyujitsu(date) {
+function isKokuminNoKyujitsu(date){
   const w=date.getDay();
-  if (w===0||w===6) return false;
+  if(w===0||w===6)return false;
   const y=date.getFullYear(),m=date.getMonth()+1,d=date.getDate();
   return isBaseHolidaySimple(new Date(y,m-1,d-1))&&isBaseHolidaySimple(new Date(y,m-1,d+1));
 }
-function isJapaneseHoliday(date) {
-  if (isBaseHolidaySimple(date)) return true;
-  if (isKokuminNoKyujitsu(date)) return true;
-  if (date.getDay()===0) return false;
+function isJapaneseHoliday(date){
+  if(isBaseHolidaySimple(date))return true;
+  if(isKokuminNoKyujitsu(date))return true;
+  if(date.getDay()===0)return false;
   let check=new Date(date.getFullYear(),date.getMonth(),date.getDate());
-  for (let s=1;s<=7;s++) {
+  for(let s=1;s<=7;s++){
     check.setDate(check.getDate()-1);
     const cw=check.getDay();
-    if (cw===0) return isBaseHolidaySimple(check);
-    if (!isBaseHolidaySimple(check)&&!isKokuminNoKyujitsu(check)) return false;
+    if(cw===0)return isBaseHolidaySimple(check);
+    if(!isBaseHolidaySimple(check)&&!isKokuminNoKyujitsu(check))return false;
   }
   return false;
 }
@@ -320,42 +411,64 @@ function isJapaneseHoliday(date) {
 // =========================
 // 為替ページを開く
 // =========================
-function openRate() {
-  const input = document.getElementById("date").value;
-  if (!input) { alert("日付を入力してください"); return; }
-  const [iy,im,id] = input.split("-").map(Number);
-  let date = new Date(iy,im-1,id);
-  const today = new Date(); today.setHours(0,0,0,0);
-  if (date>today) { alert("未来の日付は指定できません"); return; }
+function openRate(){
+  const input=document.getElementById("date").value;
+  if(!input){alert("日付を入力してください");return;}
+  const[iy,im,id]=input.split("-").map(Number);
+  let date=new Date(iy,im-1,id);
+  const today=new Date();today.setHours(0,0,0,0);
+  if(date>today){alert("未来の日付は指定できません");return;}
   let count=0;
-  while (count<30) {
+  while(count<30){
     const w=date.getDay();
-    if (w===0||w===6||isJapaneseHoliday(date)) { date.setDate(date.getDate()-1); count++; }
+    if(w===0||w===6||isJapaneseHoliday(date)){date.setDate(date.getDate()-1);count++;}
     else break;
   }
-  if (count>=30) { alert("営業日の特定に失敗しました。"); return; }
+  if(count>=30){alert("営業日の特定に失敗しました。");return;}
   const yy=String(date.getFullYear()).slice(-2);
   const mm=String(date.getMonth()+1).padStart(2,'0');
   const dd=String(date.getDate()).padStart(2,'0');
-  if (count>0) alert("休業日のため "+date.getFullYear()+"-"+mm+"-"+dd+"（営業日）を表示します");
+  if(count>0)alert("休業日のため "+date.getFullYear()+"-"+mm+"-"+dd+"（営業日）を表示します");
   window.open("https://www.murc-kawasesouba.jp/fx/past/index.php?id="+yy+mm+dd,"_blank");
 }
 
 // =========================
-// 国グループの追加
+// ユーティリティ
 // =========================
-function addGroup() {
-  groupCount++;
-  const gid = groupCount;
-  const options = COUNTRIES.map(c=>`<option value="${c}">${c}</option>`).join("");
+function getRate(currency){
+  const el=document.getElementById("rate"+currency);
+  if(!el)return null;
+  const v=parseFloat(el.value);
+  return(isNaN(v)||v<=0)?null:v;
+}
+function roundValue(v,mode){
+  if(mode==="ceil")return Math.ceil(v);
+  if(mode==="floor")return Math.floor(v);
+  return Math.round(v);
+}
+function fmtF(cur,v){
+  return v>0?`${cur} ${v.toFixed(2)}`:"-";
+}
+function fmtJ(v,rate,rounding){
+  if(rate===null)return`<span style="color:#aaa;">-</span>`;
+  if(v===0)return"-";
+  return`${roundValue(v*rate,rounding).toLocaleString()} 円`;
+}
 
-  const html = `
+// =========================
+// グループ追加
+// =========================
+function addGroup(){
+  groupCount++;
+  const gid=groupCount;
+  const options=COUNTRIES.map(c=>`<option value="${c}">${c}</option>`).join("");
+
+  const html=`
     <div class="group-block" id="group-${gid}">
       <div class="group-header">
         <span id="groupTitle-${gid}">国を選択してください</span>
-        <button class="btn-danger"
-          style="padding:4px 12px; font-size:13px; background:#fff; color:#dc3545;"
-          onclick="removeGroup(${gid})">削除</button>
+        <button style="padding:4px 12px;font-size:13px;background:#fff;color:#dc3545;
+          border-radius:4px;border:none;cursor:pointer;" onclick="removeGroup(${gid})">削除</button>
       </div>
       <div class="group-body">
         <label>国:</label>
@@ -363,279 +476,525 @@ function addGroup() {
           <option value="">-- 選択してください --</option>
           ${options}
         </select>
-
         <div id="rateInfo-${gid}" class="rate-display" style="display:none;"></div>
 
-        <!-- 明細行テーブル -->
-        <table class="detail-table" id="detailTable-${gid}" style="display:none;">
-          <thead>
-            <tr>
-              <th>項目</th>
-              <th>単価</th>
-              <th>数量</th>
-              <th>単位</th>
-              <th style="text-align:right;">外貨小計</th>
-              <th style="text-align:right;">円換算</th>
-            </tr>
-          </thead>
-          <tbody>
-            <!-- Man-day行 -->
-            <tr>
-              <td class="label-cell">Man-day</td>
-              <td id="price-manday-${gid}" class="unit-cell">-</td>
-              <td>
-                <input type="number" id="manday-${gid}"
-                  min="0" step="0.5" placeholder="0"
-                  oninput="calcGroup(${gid})">
-              </td>
-              <td class="unit-cell">日</td>
-              <td class="subtotal-cell" id="sub-manday-foreign-${gid}">-</td>
-              <td class="subtotal-cell" id="sub-manday-jpy-${gid}">-</td>
-            </tr>
-            <!-- 残業行 -->
-            <tr>
-              <td class="label-cell">残業</td>
-              <td id="price-overtime-${gid}" class="unit-cell">-</td>
-              <td>
-                <input type="number" id="overtime-${gid}"
-                  min="0" step="0.5" placeholder="0"
-                  oninput="calcGroup(${gid})">
-              </td>
-              <td class="unit-cell">時間</td>
-              <td class="subtotal-cell" id="sub-overtime-foreign-${gid}">-</td>
-              <td class="subtotal-cell" id="sub-overtime-jpy-${gid}">-</td>
-            </tr>
-            <!-- 走行距離行 -->
-            <tr>
-              <td class="label-cell">走行距離</td>
-              <td id="price-mileage-${gid}" class="unit-cell">-</td>
-              <td>
-                <input type="number" id="mileage-${gid}"
-                  min="0" step="1" placeholder="0"
-                  oninput="calcGroup(${gid})">
-              </td>
-              <td class="unit-cell">km</td>
-              <td class="subtotal-cell" id="sub-mileage-foreign-${gid}">-</td>
-              <td class="subtotal-cell" id="sub-mileage-jpy-${gid}">-</td>
-            </tr>
-          </tbody>
-        </table>
+        <!-- 協定単価 -->
+        <div id="section-contract-${gid}" style="display:none;">
+          <span class="section-label">協定単価</span>
+          <table class="detail-table">
+            <thead>
+              <tr>
+                <th>項目</th><th>単価</th><th>数量</th><th>単位</th>
+                <th style="text-align:right;">外貨小計</th>
+                <th style="text-align:right;">円換算</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="label-cell">技術料</td>
+                <td class="unit-cell" id="price-manday-${gid}">-</td>
+                <td><input type="number" id="manday-${gid}" min="0" step="0.5" placeholder="0"
+                  oninput="calcGroup(${gid})"></td>
+                <td class="unit-cell">日</td>
+                <td class="subtotal-cell" id="sub-manday-f-${gid}">-</td>
+                <td class="subtotal-cell" id="sub-manday-j-${gid}">-</td>
+              </tr>
+              <tr>
+                <td class="label-cell">時間外</td>
+                <td class="unit-cell" id="price-overtime-${gid}">-</td>
+                <td><input type="number" id="overtime-${gid}" min="0" step="0.5" placeholder="0"
+                  oninput="calcGroup(${gid})"></td>
+                <td class="unit-cell">H</td>
+                <td class="subtotal-cell" id="sub-overtime-f-${gid}">-</td>
+                <td class="subtotal-cell" id="sub-overtime-j-${gid}">-</td>
+              </tr>
+              <tr>
+                <td class="label-cell">交通費</td>
+                <td class="unit-cell" id="price-mileage-${gid}">-</td>
+                <td><input type="number" id="mileage-${gid}" min="0" step="1" placeholder="0"
+                  oninput="calcGroup(${gid})"></td>
+                <td class="unit-cell">km</td>
+                <td class="subtotal-cell" id="sub-mileage-f-${gid}">-</td>
+                <td class="subtotal-cell" id="sub-mileage-j-${gid}">-</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- 実費精算（中国） -->
+        <div id="section-expense-china-${gid}" style="display:none;">
+          <span class="section-label expense">実費精算（中国）</span>
+          <table class="detail-table">
+            <thead>
+              <tr>
+                <th>項目</th><th>単価</th><th>数量</th><th>単位</th>
+                <th style="text-align:right;">外貨小計</th>
+                <th style="text-align:right;">円換算</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="label-cell">日当</td>
+                <td class="unit-cell">USD ${CHINA_EXPENSE.dailyAllowance.toFixed(2)}</td>
+                <td><input type="number" id="china-daily-${gid}" min="0" step="1" placeholder="0"
+                  oninput="calcGroup(${gid})"></td>
+                <td class="unit-cell">日</td>
+                <td class="subtotal-cell" id="sub-china-daily-f-${gid}">-</td>
+                <td class="subtotal-cell" id="sub-china-daily-j-${gid}">-</td>
+              </tr>
+              <tr>
+                <td class="label-cell">宿泊費</td>
+                <td class="unit-cell">USD ${CHINA_EXPENSE.accommodation.toFixed(2)}</td>
+                <td><input type="number" id="china-hotel-${gid}" min="0" step="1" placeholder="0"
+                  oninput="calcGroup(${gid})"></td>
+                <td class="unit-cell">泊</td>
+                <td class="subtotal-cell" id="sub-china-hotel-f-${gid}">-</td>
+                <td class="subtotal-cell" id="sub-china-hotel-j-${gid}">-</td>
+              </tr>
+              <tr>
+                <td class="label-cell">交通費</td>
+                <td class="unit-cell">実費</td>
+                <td><input type="number" id="china-transport-${gid}" min="0" step="0.01" placeholder="0.00"
+                  oninput="calcGroup(${gid})"></td>
+                <td class="unit-cell">USD</td>
+                <td class="subtotal-cell" id="sub-china-transport-f-${gid}">-</td>
+                <td class="subtotal-cell" id="sub-china-transport-j-${gid}">-</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- 実費精算（その他） -->
+        <div id="section-expense-other-${gid}" style="display:none;">
+          <span class="section-label expense">実費精算</span>
+          <table class="detail-table">
+            <thead>
+              <tr>
+                <th>項目</th><th>通貨</th><th>金額（一式）</th><th></th>
+                <th style="text-align:right;">外貨小計</th>
+                <th style="text-align:right;">円換算</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="label-cell">宿泊費</td>
+                <td class="unit-cell" id="cur-hotel-${gid}">-</td>
+                <td><input type="number" id="hotel-${gid}" min="0" step="0.01" placeholder="0.00"
+                  oninput="calcGroup(${gid})"></td>
+                <td class="unit-cell">一式</td>
+                <td class="subtotal-cell" id="sub-hotel-f-${gid}">-</td>
+                <td class="subtotal-cell" id="sub-hotel-j-${gid}">-</td>
+              </tr>
+              <tr>
+                <td class="label-cell">交通費</td>
+                <td class="unit-cell" id="cur-transport-${gid}">-</td>
+                <td><input type="number" id="transport-${gid}" min="0" step="0.01" placeholder="0.00"
+                  oninput="calcGroup(${gid})"></td>
+                <td class="unit-cell">一式</td>
+                <td class="subtotal-cell" id="sub-transport-f-${gid}">-</td>
+                <td class="subtotal-cell" id="sub-transport-j-${gid}">-</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
 
         <div class="group-subtotal" id="groupSubtotal-${gid}" style="display:none;"></div>
       </div>
     </div>
   `;
-
-  document.getElementById("groupList").insertAdjacentHTML("beforeend", html);
+  document.getElementById("groupList").insertAdjacentHTML("beforeend",html);
   recalcTotal();
 }
 
 // =========================
 // 国選択時の処理
 // =========================
-function onCountryChange(gid) {
-  const country = document.getElementById(`country-${gid}`).value;
-  const infoEl  = document.getElementById(`rateInfo-${gid}`);
-  const tableEl = document.getElementById(`detailTable-${gid}`);
-  const subEl   = document.getElementById(`groupSubtotal-${gid}`);
-  const titleEl = document.getElementById(`groupTitle-${gid}`);
+function onCountryChange(gid){
+  const country =document.getElementById(`country-${gid}`).value;
+  const infoEl  =document.getElementById(`rateInfo-${gid}`);
+  const secCont =document.getElementById(`section-contract-${gid}`);
+  const secChina=document.getElementById(`section-expense-china-${gid}`);
+  const secOther=document.getElementById(`section-expense-other-${gid}`);
+  const subEl   =document.getElementById(`groupSubtotal-${gid}`);
+  const titleEl =document.getElementById(`groupTitle-${gid}`);
 
-  if (!country || !PRICE_TABLE[country]) {
-    infoEl.style.display  = "none";
-    tableEl.style.display = "none";
-    subEl.style.display   = "none";
-    titleEl.textContent   = "国を選択してください";
+  if(!country||!PRICE_TABLE[country]){
+    [infoEl,secCont,secChina,secOther,subEl].forEach(el=>el.style.display="none");
+    titleEl.textContent="国を選択してください";
     recalcTotal();
     return;
   }
 
-  const p = PRICE_TABLE[country];
-  titleEl.textContent = `${country}　（${p.currency}）`;
+  const p=PRICE_TABLE[country];
+  const cur=p.currency;
+  titleEl.textContent=`${country}　（${cur}）`;
 
-  // 単価情報表示
-  infoEl.style.display = "block";
-  infoEl.innerHTML =
-    `通貨: <span>${p.currency}</span> ／ ` +
-    `Man-day単価: <span>${p.manday.toFixed(2)}</span> ／ ` +
-    `残業単価(/h): <span>${p.hourly.toFixed(2)}</span> ／ ` +
-    `Mileage(/km): <span>${p.mileage.toFixed(2)}</span>`;
+  infoEl.style.display="block";
+  infoEl.innerHTML=
+    `通貨: <span>${cur}</span> ／ `+
+    `技術料単価: <span>${p.manday.toFixed(2)}</span> ／ `+
+    `時間外単価(/H): <span>${p.hourly.toFixed(2)}</span> ／ `+
+    `交通費(/km): <span>${p.mileage.toFixed(2)}</span>`;
 
-  // テーブルの単価セルを更新
-  document.getElementById(`price-manday-${gid}`).textContent   = `${p.currency} ${p.manday.toFixed(2)}`;
-  document.getElementById(`price-overtime-${gid}`).textContent = `${p.currency} ${p.hourly.toFixed(2)}`;
-  document.getElementById(`price-mileage-${gid}`).textContent  = `${p.currency} ${p.mileage.toFixed(2)}`;
+  document.getElementById(`price-manday-${gid}`).textContent  =`${cur} ${p.manday.toFixed(2)}`;
+  document.getElementById(`price-overtime-${gid}`).textContent=`${cur} ${p.hourly.toFixed(2)}`;
+  document.getElementById(`price-mileage-${gid}`).textContent =`${cur} ${p.mileage.toFixed(2)}`;
 
-  tableEl.style.display = "table";
-  subEl.style.display   = "block";
+  secCont.style.display="block";
+  subEl.style.display  ="block";
 
+  if(country==="China"){
+    secChina.style.display="block";
+    secOther.style.display="none";
+  } else {
+    secChina.style.display="none";
+    secOther.style.display="block";
+    document.getElementById(`cur-hotel-${gid}`).textContent    =cur;
+    document.getElementById(`cur-transport-${gid}`).textContent=cur;
+  }
   calcGroup(gid);
 }
 
 // =========================
-// グループ単位の計算
+// グループ計算
 // =========================
-function getRate(currency) {
-  const el = document.getElementById("rate" + currency);
-  if (!el) return null;
-  const v = parseFloat(el.value);
-  return (isNaN(v) || v <= 0) ? null : v;
-}
+function calcGroup(gid){
+  const country=document.getElementById(`country-${gid}`).value;
+  if(!country||!PRICE_TABLE[country]){recalcTotal();return;}
 
-function roundValue(v, mode) {
-  if (mode === "ceil")  return Math.ceil(v);
-  if (mode === "floor") return Math.floor(v);
-  return Math.round(v);
-}
+  const p       =PRICE_TABLE[country];
+  const cur     =p.currency;
+  const rounding=document.getElementById("rounding").value;
+  const rate    =getRate(cur);
 
-function calcGroup(gid) {
-  const country = document.getElementById(`country-${gid}`).value;
-  if (!country || !PRICE_TABLE[country]) { recalcTotal(); return; }
+  const manday  =parseFloat(document.getElementById(`manday-${gid}`).value)  ||0;
+  const overtime=parseFloat(document.getElementById(`overtime-${gid}`).value)||0;
+  const mileage =parseFloat(document.getElementById(`mileage-${gid}`).value) ||0;
 
-  const p        = PRICE_TABLE[country];
-  const rounding = document.getElementById("rounding").value;
-  const rate     = getRate(p.currency);
-  const cur      = p.currency;
+  const sMandayF  =manday  *p.manday;
+  const sOvertimeF=overtime*p.hourly;
+  const sMileageF =mileage *p.mileage;
+  const contractTotal=sMandayF+sOvertimeF+sMileageF;
 
-  const manday   = parseFloat(document.getElementById(`manday-${gid}`).value)   || 0;
-  const overtime = parseFloat(document.getElementById(`overtime-${gid}`).value) || 0;
-  const mileage  = parseFloat(document.getElementById(`mileage-${gid}`).value)  || 0;
+  document.getElementById(`sub-manday-f-${gid}`).textContent  =fmtF(cur,sMandayF);
+  document.getElementById(`sub-overtime-f-${gid}`).textContent=fmtF(cur,sOvertimeF);
+  document.getElementById(`sub-mileage-f-${gid}`).textContent =fmtF(cur,sMileageF);
+  document.getElementById(`sub-manday-j-${gid}`).innerHTML  =fmtJ(sMandayF,  rate,rounding);
+  document.getElementById(`sub-overtime-j-${gid}`).innerHTML=fmtJ(sOvertimeF,rate,rounding);
+  document.getElementById(`sub-mileage-j-${gid}`).innerHTML =fmtJ(sMileageF, rate,rounding);
 
-  // 各行の外貨小計
-  const subManday   = manday   * p.manday;
-  const subOvertime = overtime * p.hourly;
-  const subMileage  = mileage  * p.mileage;
-  const totalForeign = subManday + subOvertime + subMileage;
-
-  // 外貨小計セルを更新
-  const fmtF = (v) => v > 0 ? `${cur} ${v.toFixed(2)}` : `-`;
-  document.getElementById(`sub-manday-foreign-${gid}`).textContent   = fmtF(subManday);
-  document.getElementById(`sub-overtime-foreign-${gid}`).textContent = fmtF(subOvertime);
-  document.getElementById(`sub-mileage-foreign-${gid}`).textContent  = fmtF(subMileage);
-
-  // 円換算セルを更新
-  const fmtJ = (v) => {
-    if (rate === null) return `<span style="color:#aaa;">-</span>`;
-    if (v === 0) return `-`;
-    return `${roundValue(v * rate, rounding).toLocaleString()} 円`;
-  };
-  document.getElementById(`sub-manday-jpy-${gid}`).innerHTML   = fmtJ(subManday);
-  document.getElementById(`sub-overtime-jpy-${gid}`).innerHTML = fmtJ(subOvertime);
-  document.getElementById(`sub-mileage-jpy-${gid}`).innerHTML  = fmtJ(subMileage);
-
-  // グループ小計
-  const subEl = document.getElementById(`groupSubtotal-${gid}`);
-  let subHtml = `合計: <span style="color:#0056b3;">${cur} ${totalForeign.toFixed(2)}</span>`;
-  if (rate !== null) {
-    const totalJpy = roundValue(totalForeign * rate, rounding);
-    subHtml += ` → <span class="jpy">${totalJpy.toLocaleString()} 円</span>`;
+  let expenseTotal=0;
+  if(country==="China"){
+    const daily    =parseFloat(document.getElementById(`china-daily-${gid}`).value)    ||0;
+    const hotel    =parseFloat(document.getElementById(`china-hotel-${gid}`).value)    ||0;
+    const transport=parseFloat(document.getElementById(`china-transport-${gid}`).value)||0;
+    const sDailyF    =daily*CHINA_EXPENSE.dailyAllowance;
+    const sHotelF    =hotel*CHINA_EXPENSE.accommodation;
+    expenseTotal=sDailyF+sHotelF+transport;
+    document.getElementById(`sub-china-daily-f-${gid}`).textContent    =fmtF("USD",sDailyF);
+    document.getElementById(`sub-china-hotel-f-${gid}`).textContent    =fmtF("USD",sHotelF);
+    document.getElementById(`sub-china-transport-f-${gid}`).textContent=fmtF("USD",transport);
+    document.getElementById(`sub-china-daily-j-${gid}`).innerHTML    =fmtJ(sDailyF,  rate,rounding);
+    document.getElementById(`sub-china-hotel-j-${gid}`).innerHTML    =fmtJ(sHotelF,  rate,rounding);
+    document.getElementById(`sub-china-transport-j-${gid}`).innerHTML=fmtJ(transport,rate,rounding);
   } else {
-    subHtml += ` <span style="color:#999;">（${cur}レートを入力してください）</span>`;
+    const hotel    =parseFloat(document.getElementById(`hotel-${gid}`).value)    ||0;
+    const transport=parseFloat(document.getElementById(`transport-${gid}`).value)||0;
+    expenseTotal=hotel+transport;
+    document.getElementById(`sub-hotel-f-${gid}`).textContent    =fmtF(cur,hotel);
+    document.getElementById(`sub-transport-f-${gid}`).textContent=fmtF(cur,transport);
+    document.getElementById(`sub-hotel-j-${gid}`).innerHTML    =fmtJ(hotel,    rate,rounding);
+    document.getElementById(`sub-transport-j-${gid}`).innerHTML=fmtJ(transport,rate,rounding);
   }
-  subEl.innerHTML = subHtml;
 
+  const grandForeign=contractTotal+expenseTotal;
+  const subEl=document.getElementById(`groupSubtotal-${gid}`);
+  let html=`合計: <span style="color:#0056b3;">${cur} ${grandForeign.toFixed(2)}</span>`;
+  if(rate!==null){
+    const jpy=roundValue(grandForeign*rate,rounding);
+    html+=` → <span class="jpy">${jpy.toLocaleString()} 円</span>`;
+  } else {
+    html+=` <span style="color:#999;">（${cur}レートを入力してください）</span>`;
+  }
+  subEl.innerHTML=html;
   recalcTotal();
 }
 
 // =========================
-// 全体合計の計算
+// 全体合計
 // =========================
-function recalcAll() {
-  for (let i = 1; i <= groupCount; i++) {
-    if (document.getElementById(`group-${i}`)) calcGroup(i);
+function recalcAll(){
+  for(let i=1;i<=groupCount;i++){
+    if(document.getElementById(`group-${i}`))calcGroup(i);
   }
 }
 
-function recalcTotal() {
-  const rounding  = document.getElementById("rounding").value;
-  const totalArea = document.getElementById("totalArea");
+function recalcTotal(){
+  const rounding =document.getElementById("rounding").value;
+  const totalArea=document.getElementById("totalArea");
+  const foreignSums={};
+  let hasAny=false;
 
-  const foreignSums = {};
-  let hasAny = false;
-
-  for (let i = 1; i <= groupCount; i++) {
-    const el = document.getElementById(`group-${i}`);
-    if (!el) continue;
-    const country = document.getElementById(`country-${i}`).value;
-    if (!country || !PRICE_TABLE[country]) continue;
-
-    const p        = PRICE_TABLE[country];
-    const manday   = parseFloat(document.getElementById(`manday-${i}`).value)   || 0;
-    const overtime = parseFloat(document.getElementById(`overtime-${i}`).value) || 0;
-    const mileage  = parseFloat(document.getElementById(`mileage-${i}`).value)  || 0;
-    const sub      = manday * p.manday + overtime * p.hourly + mileage * p.mileage;
-
-    foreignSums[p.currency] = (foreignSums[p.currency] || 0) + sub;
-    hasAny = true;
+  for(let i=1;i<=groupCount;i++){
+    const el=document.getElementById(`group-${i}`);
+    if(!el)continue;
+    const country=document.getElementById(`country-${i}`).value;
+    if(!country||!PRICE_TABLE[country])continue;
+    const p  =PRICE_TABLE[country];
+    const cur=p.currency;
+    const manday  =parseFloat(document.getElementById(`manday-${i}`).value)  ||0;
+    const overtime=parseFloat(document.getElementById(`overtime-${i}`).value)||0;
+    const mileage =parseFloat(document.getElementById(`mileage-${i}`).value) ||0;
+    let total=manday*p.manday+overtime*p.hourly+mileage*p.mileage;
+    if(country==="China"){
+      const daily    =parseFloat(document.getElementById(`china-daily-${i}`).value)    ||0;
+      const hotel    =parseFloat(document.getElementById(`china-hotel-${i}`).value)    ||0;
+      const transport=parseFloat(document.getElementById(`china-transport-${i}`).value)||0;
+      total+=daily*CHINA_EXPENSE.dailyAllowance+hotel*CHINA_EXPENSE.accommodation+transport;
+    } else {
+      const hotel    =parseFloat(document.getElementById(`hotel-${i}`).value)    ||0;
+      const transport=parseFloat(document.getElementById(`transport-${i}`).value)||0;
+      total+=hotel+transport;
+    }
+    foreignSums[cur]=(foreignSums[cur]||0)+total;
+    hasAny=true;
   }
 
-  if (!hasAny) {
-    totalArea.innerHTML = `<div class="total-row" style="color:#888;">明細を追加してください</div>`;
+  if(!hasAny){
+    totalArea.innerHTML=`<div class="total-row" style="color:#888;">明細を追加してください</div>`;
     return;
   }
 
-  let html = "";
-  let grandTotal  = 0;
-  let allConverted = true;
+  let html="";
+  let grandTotal  =0;
+  let allConverted=true;
 
-  for (const [cur, sum] of Object.entries(foreignSums)) {
-    const rate = getRate(cur);
-    if (rate !== null) {
-      const jpy = roundValue(sum * rate, rounding);
-      grandTotal += jpy;
-      html += `
-        <div class="total-row">
-          <span>${cur} ${sum.toFixed(2)}</span>
-          <span>${jpy.toLocaleString()} 円</span>
-        </div>`;
+  for(const[cur,sum]of Object.entries(foreignSums)){
+    const rate=getRate(cur);
+    if(rate!==null){
+      const jpy=roundValue(sum*rate,rounding);
+      grandTotal+=jpy;
+      html+=`<div class="total-row"><span>${cur} ${sum.toFixed(2)}</span><span>${jpy.toLocaleString()} 円</span></div>`;
     } else {
-      allConverted = false;
-      html += `
-        <div class="total-row">
-          <span>${cur} ${sum.toFixed(2)}</span>
-          <span style="color:#999;">${cur} レート未入力</span>
-        </div>`;
+      allConverted=false;
+      html+=`<div class="total-row"><span>${cur} ${sum.toFixed(2)}</span><span style="color:#999;">${cur} レート未入力</span></div>`;
     }
   }
-
-  html += allConverted
-    ? `<div class="total-row grand"><span>合計</span><span>${grandTotal.toLocaleString()} 円</span></div>`
-    : `<div class="total-row grand" style="color:#999;"><span>合計</span><span>レートを全て入力してください</span></div>`;
-
-  totalArea.innerHTML = html;
+  html+=allConverted
+    ?`<div class="total-row grand"><span>合計</span><span>${grandTotal.toLocaleString()} 円</span></div>`
+    :`<div class="total-row grand" style="color:#999;"><span>合計</span><span>レートを全て入力してください</span></div>`;
+  totalArea.innerHTML=html;
 }
 
 // =========================
-// グループ削除
+// コピー用テキスト生成
 // =========================
-function removeGroup(gid) {
-  const el = document.getElementById(`group-${gid}`);
-  if (el) el.remove();
-  recalcTotal();
-}
+function generateCopyText(){
+  const dateStr =document.getElementById("date").value;
+  const dateJa  =formatDateJa(dateStr);
+  const rounding=document.getElementById("rounding").value;
+  const lines   =[];
+  let hasAny=false;
 
-// =========================
-// 全クリア
-// =========================
-function clearAll() {
-  if (!confirm("全ての明細とレートをクリアしますか？")) return;
-  document.getElementById("groupList").innerHTML = "";
-  ["rateUSD","rateEUR","rateGBP"].forEach(id => {
-    document.getElementById(id).value = "";
-  });
-  groupCount = 0;
-  recalcTotal();
-}
+  // ヘッダー
+  lines.push(`【見積明細】 ${dateJa}`);
+  lines.push("=".repeat(52));
 
-// =========================
-// キー操作
-// =========================
-document.addEventListener("keydown", function(e) {
-  const tag     = document.activeElement.tagName;
-  const isInput = (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT");
-  if (e.key === "Enter" && !isInput) recalcAll();
-  if (e.key === "Escape") {
-    if (confirm("全クリアしますか？")) clearAll();
+  // ── 換算レート情報 ──────────────────────────
+  lines.push("");
+  lines.push("【換算レート】");
+
+  const currencies=["USD","EUR","GBP"];
+  let anyRate=false;
+  for(const cur of currencies){
+    const rate=getRate(cur);
+    if(rate!==null){
+      // 例：「換算レートTTS：　2025年5月12日　\158.42/USD」
+      lines.push(`換算レート${currentRateType}：\t${dateJa}\t¥${rate.toFixed(2)}/${cur}`);
+      anyRate=true;
+    }
   }
+  if(!anyRate) lines.push("（レート未入力）");
+
+  lines.push("");
+  lines.push("=".repeat(52));
+
+  // ── 明細 ─────────────────────────────────
+  for(let i=1;i<=groupCount;i++){
+    const el=document.getElementById(`group-${i}`);
+    if(!el)continue;
+    const country=document.getElementById(`country-${i}`).value;
+    if(!country||!PRICE_TABLE[country])continue;
+
+    const p  =PRICE_TABLE[country];
+    const cur=p.currency;
+    const rate=getRate(cur);
+
+    lines.push("");
+    lines.push(`▼ ${country}（${cur}）`);
+    lines.push("-".repeat(44));
+
+    // 協定単価
+    lines.push("【協定単価】");
+    const manday  =parseFloat(document.getElementById(`manday-${i}`).value)  ||0;
+    const overtime=parseFloat(document.getElementById(`overtime-${i}`).value)||0;
+    const mileage =parseFloat(document.getElementById(`mileage-${i}`).value) ||0;
+    const sMandayF  =manday  *p.manday;
+    const sOvertimeF=overtime*p.hourly;
+    const sMileageF =mileage *p.mileage;
+    const contractTotal=sMandayF+sOvertimeF+sMileageF;
+
+    function jpyStr(v){
+      return rate!==null?`\t（${roundValue(v*rate,rounding).toLocaleString()} 円）`:"";
+    }
+    if(manday>0)
+      lines.push(`技術料：\t${cur}${p.manday.toFixed(2)} x ${manday}日 = ${cur}${sMandayF.toFixed(2)}`+jpyStr(sMandayF));
+    if(overtime>0)
+      lines.push(`時間外：\t${cur}${p.hourly.toFixed(2)} x ${overtime}H = ${cur}${sOvertimeF.toFixed(2)}`+jpyStr(sOvertimeF));
+    if(mileage>0)
+      lines.push(`交通費：\t${cur}${p.mileage.toFixed(2)} x ${mileage}km = ${cur}${sMileageF.toFixed(2)}`+jpyStr(sMileageF));
+
+    // 実費精算
+    let expenseTotal=0;
+    if(country==="China"){
+      const daily    =parseFloat(document.getElementById(`china-daily-${i}`).value)    ||0;
+      const hotel    =parseFloat(document.getElementById(`china-hotel-${i}`).value)    ||0;
+      const transport=parseFloat(document.getElementById(`china-transport-${i}`).value)||0;
+      const sDailyF=daily*CHINA_EXPENSE.dailyAllowance;
+      const sHotelF=hotel*CHINA_EXPENSE.accommodation;
+      expenseTotal=sDailyF+sHotelF+transport;
+      if(daily>0||hotel>0||transport>0){
+        lines.push("【実費精算】");
+        if(daily>0)
+          lines.push(`日当：\tUSD${CHINA_EXPENSE.dailyAllowance.toFixed(2)} x ${daily}日 = USD${sDailyF.toFixed(2)}`+jpyStr(sDailyF));
+        if(hotel>0)
+          lines.push(`宿泊費：\tUSD${CHINA_EXPENSE.accommodation.toFixed(2)} x ${hotel}泊 = USD${sHotelF.toFixed(2)}`+jpyStr(sHotelF));
+        if(transport>0)
+          lines.push(`交通費：\tUSD${transport.toFixed(2)}（実費）`+jpyStr(transport));
+      }
+    } else {
+      const hotel    =parseFloat(document.getElementById(`hotel-${i}`).value)    ||0;
+      const transport=parseFloat(document.getElementById(`transport-${i}`).value)||0;
+      expenseTotal=hotel+transport;
+      if(hotel>0||transport>0){
+        lines.push("【実費精算】");
+        if(hotel>0)
+          lines.push(`宿泊費：\t${cur}${hotel.toFixed(2)}（実費）`+jpyStr(hotel));
+        if(transport>0)
+          lines.push(`交通費：\t${cur}${transport.toFixed(2)}（実費）`+jpyStr(transport));
+      }
+    }
+
+    // グループ小計
+    const grandForeign=contractTotal+expenseTotal;
+    const jpyTotal=rate!==null
+      ?` → ${roundValue(grandForeign*rate,rounding).toLocaleString()} 円`:""
+    lines.push(`  小計：${cur}${grandForeign.toFixed(2)}${jpyTotal}`);
+    hasAny=true;
+  }
+
+  if(!hasAny){
+    alert("明細を入力してください。");
+    return;
+  }
+
+  // 総合計
+  lines.push("");
+  lines.push("=".repeat(52));
+  const foreignSums={};
+  for(let i=1;i<=groupCount;i++){
+    const el=document.getElementById(`group-${i}`);
+    if(!el)continue;
+    const country=document.getElementById(`country-${i}`).value;
+    if(!country||!PRICE_TABLE[country])continue;
+    const p  =PRICE_TABLE[country];
+    const cur=p.currency;
+    const manday  =parseFloat(document.getElementById(`manday-${i}`).value)  ||0;
+    const overtime=parseFloat(document.getElementById(`overtime-${i}`).value)||0;
+    const mileage =parseFloat(document.getElementById(`mileage-${i}`).value) ||0;
+    let total=manday*p.manday+overtime*p.hourly+mileage*p.mileage;
+    if(country==="China"){
+      const daily    =parseFloat(document.getElementById(`china-daily-${i}`).value)    ||0;
+      const hotel    =parseFloat(document.getElementById(`china-hotel-${i}`).value)    ||0;
+      const transport=parseFloat(document.getElementById(`china-transport-${i}`).value)||0;
+      total+=daily*CHINA_EXPENSE.dailyAllowance+hotel*CHINA_EXPENSE.accommodation+transport;
+    } else {
+      const hotel    =parseFloat(document.getElementById(`hotel-${i}`).value)    ||0;
+      const transport=parseFloat(document.getElementById(`transport-${i}`).value)||0;
+      total+=hotel+transport;
+    }
+    foreignSums[cur]=(foreignSums[cur]||0)+total;
+  }
+
+  let grandJpy=0;
+  let allOk   =true;
+  for(const[cur,sum]of Object.entries(foreignSums)){
+    const rate=getRate(cur);
+    if(rate!==null){
+      const jpy=roundValue(sum*rate,rounding);
+      grandJpy+=jpy;
+      lines.push(`${cur} ${sum.toFixed(2)}\t→ ${jpy.toLocaleString()} 円`);
+    } else {
+      allOk=false;
+      lines.push(`${cur} ${sum.toFixed(2)}\t（レート未入力）`);
+    }
+  }
+  if(allOk){
+    lines.push("─".repeat(32));
+    lines.push(`合計\t${grandJpy.toLocaleString()} 円`);
+  }
+
+  const text=lines.join("\n");
+  const copyArea=document.getElementById("copyArea");
+  copyArea.textContent=text;
+  copyArea.style.display="block";
+  document.getElementById("copyBtn").style.display="inline-block";
+}
+
+// =========================
+// クリップボードにコピー
+// =========================
+function copyToClipboard(){
+  const text=document.getElementById("copyArea").textContent;
+  const showMsg=()=>{
+    const msg=document.getElementById("copySuccess");
+    msg.style.display="inline";
+    setTimeout(()=>msg.style.display="none",2500);
+  };
+  navigator.clipboard.writeText(text).then(showMsg).catch(()=>{
+    const ta=document.createElement("textarea");
+    ta.value=text; ta.style.position="fixed"; ta.style.opacity="0";
+    document.body.appendChild(ta); ta.select();
+    document.execCommand("copy");
+    document.body.removeChild(ta);
+    showMsg();
+  });
+}
+
+// =========================
+// グループ削除・全クリア
+// =========================
+function removeGroup(gid){
+  const el=document.getElementById(`group-${gid}`);
+  if(el)el.remove();
+  recalcTotal();
+}
+
+function clearAll(){
+  if(!confirm("全ての明細とレートをクリアしますか？"))return;
+  document.getElementById("groupList").innerHTML="";
+  ["rateUSD","rateEUR","rateGBP"].forEach(id=>{document.getElementById(id).value="";});
+  document.getElementById("copyArea").style.display="none";
+  document.getElementById("copyBtn").style.display="none";
+  groupCount=0;
+  recalcTotal();
+}
+
+document.addEventListener("keydown",function(e){
+  const tag=document.activeElement.tagName;
+  const isInput=(tag==="INPUT"||tag==="TEXTAREA"||tag==="SELECT");
+  if(e.key==="Enter"&&!isInput)recalcAll();
+  if(e.key==="Escape"){if(confirm("全クリアしますか？"))clearAll();}
 });
 </script>
 </body>
