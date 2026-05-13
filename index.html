@@ -7,255 +7,269 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="外貨換算">
 <meta name="theme-color" content="#f8f9fa">
-<title>外貨換算アプリ</title>
+<title>外貨換算・見積アプリ</title>
 <style>
-  body { 
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
-    padding: 15px; 
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    padding: 15px;
     line-height: 1.6;
     background-color: #f8f9fa;
     color: #333;
-    max-width: 500px;
+    max-width: 600px;
     margin: 0 auto;
   }
-  h2 { font-size: 1.4em; color: #000; border-left: 5px solid #007bff; padding-left: 10px; }
-  h3 { font-size: 1.2em; margin-top: 20px; }
-  div { margin-bottom: 12px; }
-  label { display: block; font-weight: bold; font-size: 0.9em; margin-bottom: 2px; }
-  input, select { 
-    width: 100%; 
-    box-sizing: border-box; 
-    padding: 12px; 
-    font-size: 16px; 
+  h2 { font-size: 1.4em; color: #000; border-left: 5px solid #007bff; padding-left: 10px; margin-bottom: 15px; }
+  h3 { font-size: 1.1em; margin-top: 20px; margin-bottom: 8px; color: #444; }
+  label { display: block; font-weight: bold; font-size: 0.85em; margin-bottom: 3px; color: #555; }
+  input, select {
+    width: 100%;
+    padding: 10px;
+    font-size: 16px;
     border: 1px solid #ccc;
     border-radius: 6px;
     background: #fff;
+    margin-bottom: 10px;
   }
-  button { 
-    padding: 12px 15px; 
-    font-size: 16px; 
-    border-radius: 6px; 
-    border: none; 
-    background-color: #e0e0e0; 
+  input:focus, select:focus { outline: none; border-color: #007bff; }
+  button {
+    padding: 10px 15px;
+    font-size: 15px;
+    border-radius: 6px;
+    border: none;
+    background-color: #e0e0e0;
     cursor: pointer;
-    margin: 4px 2px;
-    transition: background 0.2s;
+    margin: 3px 2px;
     -webkit-tap-highlight-color: transparent;
-  }
-  button[onclick="calculate()"] {
-    background-color: #007bff;
-    color: white;
-    width: 100%;
-    font-weight: bold;
-    margin-top: 10px;
+    transition: opacity 0.2s;
   }
   button:active { opacity: 0.7; }
-  .log-item { 
+  .btn-primary   { background-color: #007bff; color: white; font-weight: bold; }
+  .btn-success   { background-color: #28a745; color: white; }
+  .btn-danger    { background-color: #dc3545; color: white; }
+  .btn-secondary { background-color: #6c757d; color: white; }
+  .btn-full { width: 100%; margin-top: 5px; }
+
+  .card {
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 15px;
+  }
+  hr { border: 0; border-top: 1px solid #ddd; margin: 15px 0; }
+
+  /* 単価表示エリア */
+  .rate-display {
+    background: #e8f4fd;
+    border: 1px solid #bee5eb;
+    border-radius: 6px;
+    padding: 10px 14px;
+    font-size: 0.88em;
+    margin-bottom: 10px;
+    line-height: 1.8;
+  }
+  .rate-display span { font-weight: bold; color: #0056b3; }
+
+  /* 明細テーブル */
+  .item-row {
     background: white;
     border: 1px solid #eee;
-    border-radius: 4px;
-    margin-bottom: 5px;
-    padding: 10px;
-    font-size: 0.85em;
-    word-break: break-all;
+    border-radius: 6px;
+    padding: 12px;
+    margin-bottom: 8px;
+    position: relative;
   }
-  .error { color: #dc3545; font-size: 0.85em; margin-top: 4px; display: none; font-weight: bold; }
-  hr { border: 0; border-top: 1px solid #ddd; margin: 20px 0; }
-  #result { color: #d63384; font-size: 1.5em; font-weight: bold; }
-  .button-group { display: flex; flex-wrap: wrap; gap: 5px; }
-  .button-group button { flex: 1; min-width: 100px; }
+  .item-row .item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+  .item-row .item-title { font-weight: bold; font-size: 0.95em; color: #007bff; }
+  .item-row .item-subtotal {
+    font-weight: bold;
+    font-size: 1em;
+    color: #d63384;
+    text-align: right;
+  }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+
+  /* 合計エリア */
+  .total-area {
+    background: #fff3cd;
+    border: 1px solid #ffc107;
+    border-radius: 8px;
+    padding: 15px;
+    margin-top: 10px;
+  }
+  .total-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 0;
+    font-size: 0.95em;
+  }
+  .total-row.grand {
+    border-top: 2px solid #ffc107;
+    margin-top: 8px;
+    padding-top: 10px;
+    font-size: 1.2em;
+    font-weight: bold;
+    color: #d63384;
+  }
+
+  .error { color: #dc3545; font-size: 0.82em; display: none; font-weight: bold; margin-top: -8px; margin-bottom: 6px; }
+
+  /* 印刷用 */
+  @media print {
+    button, .no-print { display: none !important; }
+    body { max-width: 100%; padding: 0; background: white; }
+    .card { border: 1px solid #ccc; }
+  }
 </style>
 </head>
 <body>
 
-<h2>外貨 → 円 換算アプリ</h2>
+<h2>外貨換算・見積アプリ</h2>
 
-<div>
+<!-- ① 為替レート設定 -->
+<div class="card">
+  <h3>📅 為替レート設定</h3>
   <label>日付:</label>
-  <input type="date" id="date">
-  <button type="button" style="width: auto; padding: 8px 15px;" onclick="openRate()">為替ページを開く</button>
+  <div style="display:flex; gap:8px; align-items:center; margin-bottom:10px;">
+    <input type="date" id="date" style="margin-bottom:0; flex:1;">
+    <button type="button" onclick="openRate()" style="white-space:nowrap; padding:10px 12px;">為替ページを開く</button>
+  </div>
+
+  <div class="grid-3">
+    <div>
+      <label>USD レート</label>
+      <input type="number" id="rateUSD" step="0.0001" placeholder="例: 150.25">
+    </div>
+    <div>
+      <label>EUR レート</label>
+      <input type="number" id="rateEUR" step="0.0001" placeholder="例: 163.50">
+    </div>
+    <div>
+      <label>GBP レート</label>
+      <input type="number" id="rateGBP" step="0.0001" placeholder="例: 190.00">
+    </div>
+  </div>
+
+  <div style="display:flex; gap:5px;">
+    <label style="margin:0; line-height:2.2; white-space:nowrap;">端数処理:</label>
+    <select id="rounding" style="margin-bottom:0;">
+      <option value="round">四捨五入</option>
+      <option value="ceil">切り上げ</option>
+      <option value="floor">切り捨て</option>
+    </select>
+  </div>
 </div>
 
-<div>
-  <label>通貨:</label>
-  <select id="currency">
-    <option value="USD">USD (ドル)</option>
-    <option value="EUR">EUR (ユーロ)</option>
-    <option value="GBP">GBP (ポンド)</option>
-    <option value="AUD">AUD (豪ドル)</option>
-  </select>
+<!-- ② 明細入力 -->
+<div class="card">
+  <h3>📋 明細入力</h3>
+  <div id="itemList"></div>
+  <button class="btn-success btn-full" onclick="addItem()">＋ 明細を追加</button>
 </div>
 
-<hr>
-
-<div>
-  <label>レート:</label>
-  <input type="number" id="rate" step="0.0001" placeholder="例: 150.25">
-  <button type="button" style="width: auto; font-size: 12px; padding: 5px 10px;" onclick="clearRate()">レートクリア</button>
-  <span class="error" id="rateError">正しいレートを入力してください</span>
-</div>
-
-<div>
-  <label>外貨金額:</label>
-  <input type="number" id="amount" step="0.01" placeholder="例: 100.00">
-  <span class="error" id="amountError">正しい金額を入力してください</span>
-</div>
-
-<div>
-  <label>端数処理:</label>
-  <select id="rounding">
-    <option value="round">四捨五入</option>
-    <option value="ceil">切り上げ</option>
-    <option value="floor">切り捨て</option>
-  </select>
-</div>
-
-<button onclick="calculate()">計算する</button>
-
-<div class="button-group" style="margin-top: 10px;">
-  <button onclick="clearInput()">入力クリア</button>
-  <button onclick="clearLog()">履歴クリア</button>
-</div>
-
-<h3>換算結果: <span id="result">-</span> 円</h3>
-
-<div>
-  <h3>履歴</h3>
-  <div id="log"></div>
+<!-- ③ 合計 -->
+<div class="card">
+  <h3>💰 合計</h3>
+  <div id="totalArea" class="total-area">
+    <div class="total-row" style="color:#888;">明細を追加してください</div>
+  </div>
+  <div style="display:flex; gap:5px; margin-top:10px;">
+    <button class="btn-primary" style="flex:1;" onclick="recalcAll()">再計算</button>
+    <button class="btn-secondary" onclick="window.print()">🖨️ 印刷</button>
+    <button class="btn-danger" onclick="clearAll()">全クリア</button>
+  </div>
 </div>
 
 <script>
-const logList = [];
+// =========================
+// 協定単価表
+// =========================
+const PRICE_TABLE = {
+  "Korea":     { currency: "USD", manday: 975.00, hourly: 152.34, mileage: 0.65 },
+  "China":     { currency: "USD", manday: 975.00, hourly: 152.34, mileage: 0.65 },
+  "Taiwan":    { currency: "USD", manday: 980.00, hourly: 153.12, mileage: 0.65 },
+  "India":     { currency: "USD", manday: 975.00, hourly: 152.34, mileage: 0.65 },
+  "Indonesia": { currency: "USD", manday: 995.00, hourly: 155.47, mileage: 0.65 },
+  "Malaysia":  { currency: "USD", manday: 990.00, hourly: 154.69, mileage: 0.65 },
+  "Vietnam":   { currency: "USD", manday: 985.00, hourly: 153.91, mileage: 0.65 },
+  "Singapore": { currency: "USD", manday: 995.00, hourly: 155.47, mileage: 0.65 },
+  "UAE":       { currency: "USD", manday: 965.00, hourly: 150.78, mileage: 0.65 },
+  "Turkey":    { currency: "USD", manday: 980.00, hourly: 153.12, mileage: 0.65 },
+  "Germany":   { currency: "EUR", manday: 885.00, hourly: 138.28, mileage: 0.55 },
+  "Italy":     { currency: "EUR", manday: 875.00, hourly: 136.72, mileage: 0.55 },
+  "France":    { currency: "EUR", manday: 880.00, hourly: 137.50, mileage: 0.55 },
+  "Spain":     { currency: "EUR", manday: 875.00, hourly: 136.72, mileage: 0.55 },
+  "Sweden":    { currency: "EUR", manday: 880.00, hourly: 137.50, mileage: 0.55 },
+  "Austria":   { currency: "EUR", manday: 885.00, hourly: 138.28, mileage: 0.55 },
+  "UK":        { currency: "GBP", manday: 780.00, hourly: 121.88, mileage: 0.45 },
+  "USA":       { currency: "USD", manday: 965.00, hourly: 150.78, mileage: 0.65 },
+};
+
+const COUNTRIES = Object.keys(PRICE_TABLE);
+let itemCount = 0;
 
 // =========================
-// 祝日判定：固定祝日・ハッピーマンデー・春分秋分のみ
-// （振替休日・国民の休日を含まない）
+// 祝日判定
 // =========================
 function isBaseHolidaySimple(date) {
   const y = date.getFullYear();
   const m = date.getMonth() + 1;
   const d = date.getDate();
-
-  // 元日
   if (m === 1 && d === 1) return true;
-
-  // 建国記念の日（1967年以降）
   if (y >= 1967 && m === 2 && d === 11) return true;
-
-  // 天皇誕生日：令和以降 2/23、平成 12/23
   if (y >= 2020 && m === 2  && d === 23) return true;
   if (y >= 1989 && y <= 2018 && m === 12 && d === 23) return true;
-
-  // 4月29日：昭和の日（2007〜）／みどりの日（1989〜2006）
   if (y >= 1989 && m === 4 && d === 29) return true;
-
-  // 憲法記念日
   if (m === 5 && d === 3) return true;
-
-  // みどりの日（2007年以降は5/4）
   if (y >= 2007 && m === 5 && d === 4) return true;
-
-  // こどもの日
   if (m === 5 && d === 5) return true;
-
-  // 山の日（2016年以降）
   if (y >= 2016 && m === 8 && d === 11) return true;
-
-  // 文化の日
   if (m === 11 && d === 3) return true;
-
-  // 勤労感謝の日
   if (m === 11 && d === 23) return true;
-
-  // ハッピーマンデー
   function getNthMonday(year, month, nth) {
     const first  = new Date(year, month - 1, 1);
     const offset = (1 - first.getDay() + 7) % 7;
     return 1 + offset + (nth - 1) * 7;
   }
-
-  // 成人の日（2000年以降：1月第2月曜）
   if (y >= 2000 && m === 1  && d === getNthMonday(y, 1,  2)) return true;
-
-  // 海の日（2003年以降：7月第3月曜）
   if (y >= 2003 && m === 7  && d === getNthMonday(y, 7,  3)) return true;
-
-  // 敬老の日（2003年以降：9月第3月曜）
   if (y >= 2003 && m === 9  && d === getNthMonday(y, 9,  3)) return true;
-
-  // スポーツの日（2022年以降：10月第2月曜／2020・2021は五輪特例）
   if (y >= 2022 && m === 10 && d === getNthMonday(y, 10, 2)) return true;
   if (y === 2020 && m === 7 && d === 24) return true;
   if (y === 2021 && m === 7 && d === 23) return true;
-
-  // 春分の日・秋分の日（近似計算、1980〜2099年対応）
   if (y >= 1980 && y <= 2099) {
     const spring = Math.floor(20.8431 + 0.242194 * (y - 1980) - Math.floor((y - 1980) / 4));
     if (m === 3 && d === spring) return true;
-
     const autumn = Math.floor(23.2488 + 0.242194 * (y - 1980) - Math.floor((y - 1980) / 4));
     if (m === 9 && d === autumn) return true;
   }
-
   return false;
 }
-
-// =========================
-// 国民の休日（祝日に挟まれた平日）
-// =========================
 function isKokuminNoKyujitsu(date) {
   const w = date.getDay();
   if (w === 0 || w === 6) return false;
-
-  const y = date.getFullYear();
-  const m = date.getMonth() + 1;
-  const d = date.getDate();
-
-  const prev = new Date(y, m - 1, d - 1);
-  const next = new Date(y, m - 1, d + 1);
-
-  return isBaseHolidaySimple(prev) && isBaseHolidaySimple(next);
+  const y = date.getFullYear(), m = date.getMonth() + 1, d = date.getDate();
+  return isBaseHolidaySimple(new Date(y, m-1, d-1)) && isBaseHolidaySimple(new Date(y, m-1, d+1));
 }
-
-// =========================
-// 振替休日を含む最終的な祝日判定
-//
-// 【振替休日のルール】
-//   祝日が日曜日にあたるとき、その後の最初の
-//   「祝日でも日曜でもない日」が振替休日になる。
-//   祝日が連続する場合は連鎖する。
-// =========================
 function isJapaneseHoliday(date) {
-  // ① 基本祝日チェック
   if (isBaseHolidaySimple(date)) return true;
-
-  // ② 国民の休日チェック
   if (isKokuminNoKyujitsu(date)) return true;
-
-  // ③ 振替休日チェック
-  //    日曜日は振替休日にならない
-  const w = date.getDay();
-  if (w === 0) return false;
-
-  //    1日ずつ遡り、日曜日に到達したとき
-  //    その日曜が祝日なら振替休日の連鎖が発生している
-  let checkDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-
-  for (let steps = 1; steps <= 7; steps++) {
-    checkDate.setDate(checkDate.getDate() - 1);
-    const cw = checkDate.getDay();
-
-    if (cw === 0) {
-      // 日曜日に到達：その日曜が祝日なら振替休日
-      return isBaseHolidaySimple(checkDate);
-    }
-
-    // 途中の日（月〜土）が祝日・国民の休日でなければ連鎖が切れる
-    if (!isBaseHolidaySimple(checkDate) && !isKokuminNoKyujitsu(checkDate)) {
-      return false;
-    }
+  if (date.getDay() === 0) return false;
+  let check = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  for (let s = 1; s <= 7; s++) {
+    check.setDate(check.getDate() - 1);
+    const cw = check.getDay();
+    if (cw === 0) return isBaseHolidaySimple(check);
+    if (!isBaseHolidaySimple(check) && !isKokuminNoKyujitsu(check)) return false;
   }
-
   return false;
 }
 
@@ -264,141 +278,258 @@ function isJapaneseHoliday(date) {
 // =========================
 function openRate() {
   const input = document.getElementById("date").value;
-  if (!input) {
-    alert("日付を入力してください");
-    return;
-  }
-
-  // タイムゾーン問題を回避：ローカル時刻で日付オブジェクトを生成
+  if (!input) { alert("日付を入力してください"); return; }
   const [iy, im, id] = input.split("-").map(Number);
   let date = new Date(iy, im - 1, id);
-
-  // today も日付部分のみで比較
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  if (date > today) {
-    alert("未来の日付は指定できません");
-    return;
-  }
-
-  // 休業日（土日・祝日）なら直前の営業日に遡る（最大30日）
+  const today = new Date(); today.setHours(0,0,0,0);
+  if (date > today) { alert("未来の日付は指定できません"); return; }
   let count = 0;
-  const MAX_RETRY = 30;
-
-  while (count < MAX_RETRY) {
+  while (count < 30) {
     const w = date.getDay();
-    if (w === 0 || w === 6 || isJapaneseHoliday(date)) {
-      date.setDate(date.getDate() - 1);
-      count++;
-    } else {
-      break;
-    }
+    if (w === 0 || w === 6 || isJapaneseHoliday(date)) { date.setDate(date.getDate()-1); count++; }
+    else break;
   }
-
-  if (count >= MAX_RETRY) {
-    alert("営業日の特定に失敗しました。日付を確認してください。");
-    return;
-  }
-
+  if (count >= 30) { alert("営業日の特定に失敗しました。"); return; }
   const yy = String(date.getFullYear()).slice(-2);
-  const mm = String(date.getMonth() + 1).padStart(2, '0');
-  const dd = String(date.getDate()).padStart(2, '0');
-  const url = "https://www.murc-kawasesouba.jp/fx/past/index.php?id=" + yy + mm + dd;
-
+  const mm = String(date.getMonth()+1).padStart(2,'0');
+  const dd = String(date.getDate()).padStart(2,'0');
   if (count > 0) {
-    const disp =
-      date.getFullYear() + "-" +
-      String(date.getMonth() + 1).padStart(2, '0') + "-" +
-      String(date.getDate()).padStart(2, '0');
-    alert("休業日のため " + disp + "（営業日）を表示します");
+    alert("休業日のため " + date.getFullYear()+"-"+mm+"-"+dd + "（営業日）を表示します");
   }
-
-  window.open(url, "_blank");
+  window.open("https://www.murc-kawasesouba.jp/fx/past/index.php?id=" + yy+mm+dd, "_blank");
 }
 
 // =========================
-// 計算
+// 明細の追加
 // =========================
+function addItem() {
+  itemCount++;
+  const id = itemCount;
+
+  // 国のoption生成
+  const options = COUNTRIES.map(c =>
+    `<option value="${c}">${c}</option>`
+  ).join("");
+
+  const html = `
+    <div class="item-row" id="item-${id}">
+      <div class="item-header">
+        <span class="item-title">明細 ${id}</span>
+        <button class="btn-danger" style="padding:4px 10px; font-size:13px;"
+          onclick="removeItem(${id})">削除</button>
+      </div>
+
+      <label>国:</label>
+      <select id="country-${id}" onchange="onCountryChange(${id})">
+        <option value="">-- 選択してください --</option>
+        ${options}
+      </select>
+
+      <div id="rateInfo-${id}" class="rate-display" style="display:none;"></div>
+
+      <div class="grid-3">
+        <div>
+          <label>Man-day 数</label>
+          <input type="number" id="manday-${id}" min="0" step="0.5" placeholder="0"
+            oninput="calcItem(${id})">
+        </div>
+        <div>
+          <label>残業時間 (h)</label>
+          <input type="number" id="overtime-${id}" min="0" step="0.5" placeholder="0"
+            oninput="calcItem(${id})">
+        </div>
+        <div>
+          <label>走行距離 (km)</label>
+          <input type="number" id="mileage-${id}" min="0" step="1" placeholder="0"
+            oninput="calcItem(${id})">
+        </div>
+      </div>
+
+      <div class="item-subtotal" id="subtotal-${id}">小計: -</div>
+    </div>
+  `;
+
+  document.getElementById("itemList").insertAdjacentHTML("beforeend", html);
+  recalcAll();
+}
+
+// =========================
+// 国選択時：単価情報を表示
+// =========================
+function onCountryChange(id) {
+  const country = document.getElementById(`country-${id}`).value;
+  const infoEl  = document.getElementById(`rateInfo-${id}`);
+
+  if (!country || !PRICE_TABLE[country]) {
+    infoEl.style.display = "none";
+    calcItem(id);
+    return;
+  }
+
+  const p = PRICE_TABLE[country];
+  infoEl.style.display = "block";
+  infoEl.innerHTML =
+    `通貨: <span>${p.currency}</span> ／ ` +
+    `Man-day: <span>${p.manday.toFixed(2)}</span> ／ ` +
+    `残業(/h): <span>${p.hourly.toFixed(2)}</span> ／ ` +
+    `Mileage(/km): <span>${p.mileage.toFixed(2)}</span>`;
+
+  calcItem(id);
+}
+
+// =========================
+// 1明細の計算
+// =========================
+function getRate(currency) {
+  const rounding = document.getElementById("rounding").value;
+  const rateEl = document.getElementById("rate" + currency);
+  if (!rateEl) return null;
+  const v = parseFloat(rateEl.value);
+  return (isNaN(v) || v <= 0) ? null : v;
+}
+
 function roundValue(v, mode) {
   if (mode === "ceil")  return Math.ceil(v);
   if (mode === "floor") return Math.floor(v);
   return Math.round(v);
 }
 
-function showError(id, visible) {
-  // ✅ inline：エラーメッセージをラベルの横に自然に表示
-  document.getElementById(id).style.display = visible ? "inline" : "none";
-}
+function calcItem(id) {
+  const country  = document.getElementById(`country-${id}`).value;
+  const subtotal = document.getElementById(`subtotal-${id}`);
+  const rounding = document.getElementById("rounding").value;
 
-function calculate() {
-  const rateInput   = document.getElementById("rate");
-  const amountInput = document.getElementById("amount");
-  const rate        = parseFloat(rateInput.value);
-  const amount      = parseFloat(amountInput.value);
-  const rounding    = document.getElementById("rounding").value;
-
-  let hasError = false;
-
-  if (isNaN(rate) || rate <= 0) {
-    showError("rateError", true);
-    hasError = true;
-  } else {
-    showError("rateError", false);
+  if (!country || !PRICE_TABLE[country]) {
+    subtotal.textContent = "小計: -";
+    recalcTotal();
+    return;
   }
 
-  if (isNaN(amount) || amount <= 0) {
-    showError("amountError", true);
-    hasError = true;
+  const p        = PRICE_TABLE[country];
+  const manday   = parseFloat(document.getElementById(`manday-${id}`).value)   || 0;
+  const overtime = parseFloat(document.getElementById(`overtime-${id}`).value) || 0;
+  const mileage  = parseFloat(document.getElementById(`mileage-${id}`).value)  || 0;
+
+  const foreignTotal =
+    manday   * p.manday  +
+    overtime * p.hourly  +
+    mileage  * p.mileage;
+
+  const rate = getRate(p.currency);
+
+  let text = `外貨小計: ${p.currency} ${foreignTotal.toFixed(2)}`;
+
+  if (rate !== null) {
+    const jpy = roundValue(foreignTotal * rate, rounding);
+    text += ` → <span style="color:#d63384;">${jpy.toLocaleString()} 円</span>`;
   } else {
-    showError("amountError", false);
+    text += ` <span style="color:#999;">（${p.currency}レートを入力してください）</span>`;
   }
 
-  if (hasError) return;
-
-  const result = roundValue(rate * amount, rounding);
-  document.getElementById("result").textContent = result.toLocaleString();
-
-  const date = document.getElementById("date").value || "-";
-  const cur  = document.getElementById("currency").value;
-
-  logList.push(`${date} ${cur} ${amount} × ${rate} = ${result.toLocaleString()} 円`);
-  renderLog();
-
-  // ✅ focus を先に呼び、select は setTimeout でラップして動作を安定させる
-  amountInput.focus();
-  setTimeout(() => amountInput.select(), 0);
+  subtotal.innerHTML = text;
+  recalcTotal();
 }
 
 // =========================
-// UI操作
+// 全体の合計計算
 // =========================
-function renderLog() {
-  const log = document.getElementById("log");
-  log.innerHTML = "";
-  logList.forEach(x => {
-    const div = document.createElement("div");
-    div.className = "log-item";
-    div.textContent = x;
-    log.appendChild(div);
-  });
+function recalcAll() {
+  for (let i = 1; i <= itemCount; i++) {
+    if (document.getElementById(`item-${i}`)) calcItem(i);
+  }
 }
 
-function clearInput() {
-  document.getElementById("amount").value = "";
-  document.getElementById("result").textContent = "-";
-  showError("amountError", false);
-  showError("rateError", false);
+function recalcTotal() {
+  const rounding = document.getElementById("rounding").value;
+  const totalArea = document.getElementById("totalArea");
+
+  // 通貨ごとに外貨小計を集計
+  const foreignSums = {};  // { USD: 0, EUR: 0, GBP: 0 }
+  let hasAny = false;
+
+  for (let i = 1; i <= itemCount; i++) {
+    const el = document.getElementById(`item-${i}`);
+    if (!el) continue;
+    const country = document.getElementById(`country-${i}`).value;
+    if (!country || !PRICE_TABLE[country]) continue;
+
+    const p        = PRICE_TABLE[country];
+    const manday   = parseFloat(document.getElementById(`manday-${i}`).value)   || 0;
+    const overtime = parseFloat(document.getElementById(`overtime-${i}`).value) || 0;
+    const mileage  = parseFloat(document.getElementById(`mileage-${i}`).value)  || 0;
+
+    const sub = manday * p.manday + overtime * p.hourly + mileage * p.mileage;
+    foreignSums[p.currency] = (foreignSums[p.currency] || 0) + sub;
+    hasAny = true;
+  }
+
+  if (!hasAny) {
+    totalArea.innerHTML = `<div class="total-row" style="color:#888;">明細を追加してください</div>`;
+    return;
+  }
+
+  let html = "";
+  let grandTotal = 0;
+  let allConverted = true;
+
+  for (const [cur, sum] of Object.entries(foreignSums)) {
+    const rate = getRate(cur);
+    const foreignStr = `${cur} ${sum.toFixed(2)}`;
+    if (rate !== null) {
+      const jpy = roundValue(sum * rate, rounding);
+      grandTotal += jpy;
+      html += `
+        <div class="total-row">
+          <span>${foreignStr}</span>
+          <span>${jpy.toLocaleString()} 円</span>
+        </div>`;
+    } else {
+      allConverted = false;
+      html += `
+        <div class="total-row">
+          <span>${foreignStr}</span>
+          <span style="color:#999;">${cur}レート未入力</span>
+        </div>`;
+    }
+  }
+
+  if (allConverted) {
+    html += `
+      <div class="total-row grand">
+        <span>合計</span>
+        <span>${grandTotal.toLocaleString()} 円</span>
+      </div>`;
+  } else {
+    html += `
+      <div class="total-row grand" style="color:#999;">
+        <span>合計</span>
+        <span>レートを全て入力してください</span>
+      </div>`;
+  }
+
+  totalArea.innerHTML = html;
 }
 
-function clearRate() {
-  document.getElementById("rate").value = "";
-  showError("rateError", false);
+// =========================
+// 明細削除
+// =========================
+function removeItem(id) {
+  const el = document.getElementById(`item-${id}`);
+  if (el) el.remove();
+  recalcTotal();
 }
 
-function clearLog() {
-  logList.length = 0;
-  renderLog();
+// =========================
+// 全クリア
+// =========================
+function clearAll() {
+  if (!confirm("全ての明細とレートをクリアしますか？")) return;
+  document.getElementById("itemList").innerHTML = "";
+  document.getElementById("rateUSD").value = "";
+  document.getElementById("rateEUR").value = "";
+  document.getElementById("rateGBP").value = "";
+  itemCount = 0;
+  recalcTotal();
 }
 
 // =========================
@@ -406,17 +537,12 @@ function clearLog() {
 // =========================
 document.addEventListener("keydown", function(e) {
   const tag     = document.activeElement.tagName;
-  const isInput = (tag === "INPUT" || tag === "TEXTAREA");
-
-  if (e.key === "Enter") {
-    calculate();
-  } else if (e.key === "Delete" && !isInput) {
-    clearInput();
-  } else if (e.key === "Escape") {
-    clearLog();
+  const isInput = (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT");
+  if (e.key === "Enter" && !isInput) recalcAll();
+  if (e.key === "Escape") {
+    if (confirm("全クリアしますか？")) clearAll();
   }
 });
 </script>
-
 </body>
 </html>
