@@ -180,6 +180,7 @@
     border-color: #0056b3;
   }
 
+  /* ── コピー行エリア ── */
   .copy-lines-area {
     margin-top: 10px;
     display: none;
@@ -202,12 +203,44 @@
     border-radius: 4px;
     margin: 8px 0 3px;
   }
+  /* 単一欄行 */
   .copy-line-row {
     display: flex;
     align-items: center;
     gap: 6px;
     margin-bottom: 4px;
   }
+  /* 2分割行 */
+  .copy-line-row-split {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-bottom: 4px;
+  }
+  .copy-line-row-split .col-foreign {
+    flex: 3;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .copy-line-row-split .col-jpy {
+    flex: 2;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .col-label {
+    font-size: 0.72em;
+    font-weight: bold;
+    white-space: nowrap;
+    color: #fff;
+    padding: 2px 6px;
+    border-radius: 3px;
+    flex-shrink: 0;
+  }
+  .col-label.foreign { background: #0056b3; }
+  .col-label.jpy     { background: #d63384; }
+
   .copy-line-input {
     flex: 1;
     font-family: monospace;
@@ -220,6 +253,7 @@
     cursor: pointer;
     margin-bottom: 0 !important;
     caret-color: transparent;
+    min-width: 0;
   }
   .copy-line-input:focus {
     border-color: #007bff !important;
@@ -333,7 +367,7 @@
   </div>
 </div>
 
-<!-- コピー用テキスト（行単位） -->
+<!-- コピー用テキスト -->
 <div class="card no-print">
   <h3>📋 コピー用テキスト</h3>
   <div style="display:flex; gap:5px; align-items:center; flex-wrap:wrap;">
@@ -859,6 +893,105 @@ function recalcTotal(){
 }
 
 // =========================
+// DOM構築ヘルパー
+// =========================
+function makeDivider(area,text){
+  const div=document.createElement("div");
+  div.className="copy-line-divider";
+  div.textContent=text;
+  area.appendChild(div);
+}
+
+function makeSingleRow(area,text){
+  const row=document.createElement("div");
+  row.className="copy-line-row";
+
+  const inp=document.createElement("input");
+  inp.type="text";
+  inp.className="copy-line-input";
+  inp.value=text;
+  inp.readOnly=true;
+  inp.addEventListener("click",function(){ this.select(); });
+  inp.addEventListener("focus",function(){ this.select(); });
+
+  const btn=document.createElement("button");
+  btn.className="copy-line-btn";
+  btn.textContent="📋";
+  btn.title="クリップボードにコピー";
+  btn.addEventListener("click",function(){ copyLine(inp,btn); });
+
+  row.appendChild(inp);
+  row.appendChild(btn);
+  area.appendChild(row);
+}
+
+function makeSplitRow(area,textForeign,textJpy){
+  const row=document.createElement("div");
+  row.className="copy-line-row-split";
+
+  // 左：外貨計算
+  const colF=document.createElement("div");
+  colF.className="col-foreign";
+
+  const lblF=document.createElement("span");
+  lblF.className="col-label foreign";
+  lblF.textContent="外貨";
+
+  const inpF=document.createElement("input");
+  inpF.type="text";
+  inpF.className="copy-line-input";
+  inpF.value=textForeign;
+  inpF.readOnly=true;
+  inpF.addEventListener("click",function(){ this.select(); });
+  inpF.addEventListener("focus",function(){ this.select(); });
+
+  const btnF=document.createElement("button");
+  btnF.className="copy-line-btn";
+  btnF.textContent="📋";
+  btnF.title="外貨計算をコピー";
+  btnF.addEventListener("click",function(){ copyLine(inpF,btnF); });
+
+  colF.appendChild(lblF);
+  colF.appendChild(inpF);
+  colF.appendChild(btnF);
+
+  // 右：円換算
+  const colJ=document.createElement("div");
+  colJ.className="col-jpy";
+
+  const lblJ=document.createElement("span");
+  lblJ.className="col-label jpy";
+  lblJ.textContent="円換算";
+
+  const inpJ=document.createElement("input");
+  inpJ.type="text";
+  inpJ.className="copy-line-input";
+  inpJ.value=textJpy!==null ? textJpy : "レート未入力";
+  inpJ.readOnly=true;
+  if(textJpy===null) inpJ.style.color="#aaa";
+  inpJ.addEventListener("click",function(){ this.select(); });
+  inpJ.addEventListener("focus",function(){ this.select(); });
+
+  const btnJ=document.createElement("button");
+  btnJ.className="copy-line-btn";
+  btnJ.textContent="📋";
+  btnJ.title="円換算をコピー";
+  if(textJpy===null){
+    btnJ.disabled=true;
+    btnJ.style.opacity="0.4";
+  }
+  btnJ.addEventListener("click",function(){ copyLine(inpJ,btnJ); });
+
+  colJ.appendChild(lblJ);
+  colJ.appendChild(inpJ);
+  colJ.appendChild(btnJ);
+
+  row.appendChild(colF);
+  row.appendChild(colJ);
+  area.appendChild(row);
+}
+
+// =========================
 // コピー行リストの生成
 // =========================
 function generateCopyLines(){
@@ -866,10 +999,7 @@ function generateCopyLines(){
   const dateJa  =formatDateJa(dateStr);
   const rounding=document.getElementById("rounding").value;
 
-  const items=[];
-  let hasAny=false;
-
-  // 明細で実際に使われている通貨だけを収集
+  // 使用中の通貨を収集
   const usedCurrencies=new Set();
   for(let i=1;i<=groupCount;i++){
     const el=document.getElementById(`group-${i}`);
@@ -879,19 +1009,30 @@ function generateCopyLines(){
     usedCurrencies.add(PRICE_TABLE[country].currency);
   }
 
-  // 換算レート行：使われた通貨かつレート入力済みのものだけ出力
-  items.push({ divider:true, text:"【換算レート】" });
+  if(usedCurrencies.size===0){ alert("明細を入力してください。"); return; }
+
+  const area=document.getElementById("copyLinesArea");
+  area.innerHTML="";
+
+  // 操作説明
+  const header=document.createElement("div");
+  header.className="copy-line-header";
+  header.textContent="▼ 欄をクリックで全選択 → Ctrl+C（Mac: ⌘+C）でコピー　または　📋ボタンで即コピー";
+  area.appendChild(header);
+
+  // 換算レート（単一欄）
+  makeDivider(area,"【換算レート】");
   let anyRate=false;
   for(const cur of usedCurrencies){
     const rate=getRate(cur);
     if(rate!==null){
-      items.push({ text:`換算レート${currentRateType}：${dateJa}　¥${rate.toFixed(2)}/${cur}` });
+      makeSingleRow(area,`換算レート${currentRateType}：${dateJa}　¥${rate.toFixed(2)}/${cur}`);
       anyRate=true;
     }
   }
-  if(!anyRate) items.push({ divider:true, text:"（レート未入力）" });
+  if(!anyRate) makeDivider(area,"（レート未入力）");
 
-  // 明細行
+  // 明細（2分割欄）
   for(let i=1;i<=groupCount;i++){
     const el=document.getElementById(`group-${i}`);
     if(!el)continue;
@@ -902,13 +1043,16 @@ function generateCopyLines(){
     const cur =p.currency;
     const rate=getRate(cur);
 
-    items.push({ divider:true, text:`▼ ${country}（${cur}）` });
+    makeDivider(area,`▼ ${country}（${cur}）`);
 
-    function jpyPart(v){
-      return rate!==null?`（${roundValue(v*rate,rounding).toLocaleString()} 円）`:"";
+    function jpyText(v){
+      if(rate===null)return null;
+      if(v===0)return"-";
+      return`${roundValue(v*rate,rounding).toLocaleString()} 円`;
     }
 
-    items.push({ divider:true, text:"【協定単価】" });
+    // 協定単価
+    makeDivider(area,"【協定単価】");
     const manday  =parseFloat(document.getElementById(`manday-${i}`).value)  ||0;
     const overtime=parseFloat(document.getElementById(`overtime-${i}`).value)||0;
     const mileage =parseFloat(document.getElementById(`mileage-${i}`).value) ||0;
@@ -917,83 +1061,56 @@ function generateCopyLines(){
     const sMileageF =mileage *p.mileage;
 
     if(manday>0)
-      items.push({ text:`技術料：${cur}${p.manday.toFixed(2)} x ${manday}日 = ${cur}${sMandayF.toFixed(2)}　${jpyPart(sMandayF)}` });
+      makeSplitRow(area,
+        `技術料：${cur}${p.manday.toFixed(2)} x ${manday}日 = ${cur}${sMandayF.toFixed(2)}`,
+        jpyText(sMandayF));
     if(overtime>0)
-      items.push({ text:`時間外：${cur}${p.hourly.toFixed(2)} x ${overtime}H = ${cur}${sOvertimeF.toFixed(2)}　${jpyPart(sOvertimeF)}` });
+      makeSplitRow(area,
+        `時間外：${cur}${p.hourly.toFixed(2)} x ${overtime}H = ${cur}${sOvertimeF.toFixed(2)}`,
+        jpyText(sOvertimeF));
     if(mileage>0)
-      items.push({ text:`交通費：${cur}${p.mileage.toFixed(2)} x ${mileage}km = ${cur}${sMileageF.toFixed(2)}　${jpyPart(sMileageF)}` });
+      makeSplitRow(area,
+        `交通費：${cur}${p.mileage.toFixed(2)} x ${mileage}km = ${cur}${sMileageF.toFixed(2)}`,
+        jpyText(sMileageF));
 
+    // 実費精算
     if(country==="China"){
       const daily    =parseFloat(document.getElementById(`china-daily-${i}`).value)    ||0;
       const hotel    =parseFloat(document.getElementById(`china-hotel-${i}`).value)    ||0;
       const transport=parseFloat(document.getElementById(`china-transport-${i}`).value)||0;
       if(daily>0||hotel>0||transport>0){
-        items.push({ divider:true, text:"【実費精算】" });
+        makeDivider(area,"【実費精算】");
         const sDailyF=daily*CHINA_EXPENSE.dailyAllowance;
         const sHotelF=hotel*CHINA_EXPENSE.accommodation;
         if(daily>0)
-          items.push({ text:`日当：USD${CHINA_EXPENSE.dailyAllowance.toFixed(2)} x ${daily}日 = USD${sDailyF.toFixed(2)}　${jpyPart(sDailyF)}` });
+          makeSplitRow(area,
+            `日当：USD${CHINA_EXPENSE.dailyAllowance.toFixed(2)} x ${daily}日 = USD${sDailyF.toFixed(2)}`,
+            jpyText(sDailyF));
         if(hotel>0)
-          items.push({ text:`宿泊費：USD${CHINA_EXPENSE.accommodation.toFixed(2)} x ${hotel}泊 = USD${sHotelF.toFixed(2)}　${jpyPart(sHotelF)}` });
+          makeSplitRow(area,
+            `宿泊費：USD${CHINA_EXPENSE.accommodation.toFixed(2)} x ${hotel}泊 = USD${sHotelF.toFixed(2)}`,
+            jpyText(sHotelF));
         if(transport>0)
-          items.push({ text:`交通費：USD${transport.toFixed(2)}（実費）　${jpyPart(transport)}` });
+          makeSplitRow(area,
+            `交通費：USD${transport.toFixed(2)}（実費）`,
+            jpyText(transport));
       }
     } else {
       const hotel    =parseFloat(document.getElementById(`hotel-${i}`).value)    ||0;
       const transport=parseFloat(document.getElementById(`transport-${i}`).value)||0;
       if(hotel>0||transport>0){
-        items.push({ divider:true, text:"【実費精算】" });
+        makeDivider(area,"【実費精算】");
         if(hotel>0)
-          items.push({ text:`宿泊費：${cur}${hotel.toFixed(2)}（実費）　${jpyPart(hotel)}` });
+          makeSplitRow(area,
+            `宿泊費：${cur}${hotel.toFixed(2)}（実費）`,
+            jpyText(hotel));
         if(transport>0)
-          items.push({ text:`交通費：${cur}${transport.toFixed(2)}（実費）　${jpyPart(transport)}` });
+          makeSplitRow(area,
+            `交通費：${cur}${transport.toFixed(2)}（実費）`,
+            jpyText(transport));
       }
     }
-
-    hasAny=true;
   }
-
-  if(!hasAny){ alert("明細を入力してください。"); return; }
-
-  // DOM構築
-  const area=document.getElementById("copyLinesArea");
-  area.innerHTML="";
-
-  const header=document.createElement("div");
-  header.className="copy-line-header";
-  header.textContent="▼ 行をクリックで全選択 → Ctrl+C（Mac: ⌘+C）でコピー　または　📋ボタンで即コピー";
-  area.appendChild(header);
-
-  items.forEach(item=>{
-    if(item.divider){
-      const div=document.createElement("div");
-      div.className="copy-line-divider";
-      div.textContent=item.text;
-      area.appendChild(div);
-    } else {
-      const row=document.createElement("div");
-      row.className="copy-line-row";
-
-      const inp=document.createElement("input");
-      inp.type="text";
-      inp.className="copy-line-input";
-      inp.value=item.text;
-      inp.readOnly=true;
-
-      inp.addEventListener("click",function(){ this.select(); });
-      inp.addEventListener("focus",function(){ this.select(); });
-
-      const btn=document.createElement("button");
-      btn.className="copy-line-btn";
-      btn.textContent="📋";
-      btn.title="クリップボードにコピー";
-      btn.addEventListener("click",function(){ copyLine(inp,btn); });
-
-      row.appendChild(inp);
-      row.appendChild(btn);
-      area.appendChild(row);
-    }
-  });
 
   area.style.display="block";
 }
