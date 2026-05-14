@@ -159,7 +159,6 @@
     color: #d63384;
   }
 
-  /* レート種別タブ */
   .rate-type-tabs {
     display: flex;
     gap: 6px;
@@ -181,7 +180,6 @@
     border-color: #0056b3;
   }
 
-  /* コピー用テキストエリア */
   .copy-area {
     background: #f8f9fa;
     border: 1px solid #ccc;
@@ -228,14 +226,12 @@
     <button type="button" onclick="openRate()" style="white-space:nowrap; padding:10px 12px;">為替ページを開く</button>
   </div>
 
-  <!-- レート種別選択 -->
   <label>レート種別:</label>
   <div class="rate-type-tabs no-print">
     <button id="tab-TTS" class="active" onclick="selectRateType('TTS')">TTS（売レート）</button>
     <button id="tab-TTB" onclick="selectRateType('TTB')">TTB（買レート）</button>
     <button id="tab-TTM" onclick="selectRateType('TTM')">TTM（仲値）</button>
   </div>
-  <!-- 印刷用：種別テキスト表示 -->
   <div id="rateTypeLabel" style="font-weight:bold; font-size:0.9em; color:#007bff; margin-bottom:6px; display:none;">
     適用レート：TTS
   </div>
@@ -243,21 +239,24 @@
   <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px;">
     <div>
       <label>USD レート</label>
-      <input type="number" id="rateUSD" step="0.0001" placeholder="例: 150.25" oninput="recalcAll()">
+      <input type="number" id="rateUSD" step="0.0001" placeholder="例: 150.25"
+        oninput="saveRates(); recalcAll()">
     </div>
     <div>
       <label>EUR レート</label>
-      <input type="number" id="rateEUR" step="0.0001" placeholder="例: 163.50" oninput="recalcAll()">
+      <input type="number" id="rateEUR" step="0.0001" placeholder="例: 163.50"
+        oninput="saveRates(); recalcAll()">
     </div>
     <div>
       <label>GBP レート</label>
-      <input type="number" id="rateGBP" step="0.0001" placeholder="例: 190.00" oninput="recalcAll()">
+      <input type="number" id="rateGBP" step="0.0001" placeholder="例: 190.00"
+        oninput="saveRates(); recalcAll()">
     </div>
   </div>
 
   <div style="display:flex; gap:8px; align-items:center;">
     <label style="margin:0; white-space:nowrap; line-height:2.2;">端数処理:</label>
-    <select id="rounding" style="margin-bottom:0;" onchange="recalcAll()">
+    <select id="rounding" style="margin-bottom:0;" onchange="saveRates(); recalcAll()">
       <option value="round">四捨五入</option>
       <option value="ceil">切り上げ</option>
       <option value="floor">切り捨て</option>
@@ -327,8 +326,35 @@ const CHINA_EXPENSE = {
 };
 
 const COUNTRIES = Object.keys(PRICE_TABLE);
-let groupCount  = 0;
-let currentRateType = "TTS"; // TTS / TTB / TTM
+let groupCount      = 0;
+let currentRateType = "TTS";
+
+// =========================
+// localStorage への保存・復元
+// =========================
+function saveRates() {
+  localStorage.setItem("rateUSD",  document.getElementById("rateUSD").value);
+  localStorage.setItem("rateEUR",  document.getElementById("rateEUR").value);
+  localStorage.setItem("rateGBP",  document.getElementById("rateGBP").value);
+  localStorage.setItem("rounding", document.getElementById("rounding").value);
+}
+
+function loadRates() {
+  const usd      = localStorage.getItem("rateUSD");
+  const eur      = localStorage.getItem("rateEUR");
+  const gbp      = localStorage.getItem("rateGBP");
+  const rounding = localStorage.getItem("rounding");
+  const rateType = localStorage.getItem("rateType");
+
+  if (usd)      document.getElementById("rateUSD").value  = usd;
+  if (eur)      document.getElementById("rateEUR").value  = eur;
+  if (gbp)      document.getElementById("rateGBP").value  = gbp;
+  if (rounding) document.getElementById("rounding").value = rounding;
+  if (rateType) selectRateType(rateType);
+}
+
+// ページ読み込み時に復元
+window.addEventListener("load", loadRates);
 
 // =========================
 // レート種別選択
@@ -338,14 +364,14 @@ function selectRateType(type) {
   ["TTS","TTB","TTM"].forEach(t => {
     document.getElementById(`tab-${t}`).classList.toggle("active", t === type);
   });
-  // 印刷用ラベル更新
   const labelMap = { TTS: "TTS（売レート）", TTB: "TTB（買レート）", TTM: "TTM（仲値）" };
   document.getElementById("rateTypeLabel").textContent = `適用レート：${labelMap[type]}`;
+  // 保存
+  localStorage.setItem("rateType", type);
 }
 
 // =========================
 // 日付を日本語形式に変換
-// 例："2025-05-12" → "2025年5月12日"
 // =========================
 function formatDateJa(dateStr) {
   if (!dateStr) return "日付未入力";
@@ -625,7 +651,7 @@ function onCountryChange(gid){
     return;
   }
 
-  const p=PRICE_TABLE[country];
+  const p  =PRICE_TABLE[country];
   const cur=p.currency;
   titleEl.textContent=`${country}　（${cur}）`;
 
@@ -688,8 +714,8 @@ function calcGroup(gid){
     const daily    =parseFloat(document.getElementById(`china-daily-${gid}`).value)    ||0;
     const hotel    =parseFloat(document.getElementById(`china-hotel-${gid}`).value)    ||0;
     const transport=parseFloat(document.getElementById(`china-transport-${gid}`).value)||0;
-    const sDailyF    =daily*CHINA_EXPENSE.dailyAllowance;
-    const sHotelF    =hotel*CHINA_EXPENSE.accommodation;
+    const sDailyF=daily*CHINA_EXPENSE.dailyAllowance;
+    const sHotelF=hotel*CHINA_EXPENSE.accommodation;
     expenseTotal=sDailyF+sHotelF+transport;
     document.getElementById(`sub-china-daily-f-${gid}`).textContent    =fmtF("USD",sDailyF);
     document.getElementById(`sub-china-hotel-f-${gid}`).textContent    =fmtF("USD",sHotelF);
@@ -800,39 +826,41 @@ function generateCopyText(){
   lines.push(`【見積明細】 ${dateJa}`);
   lines.push("=".repeat(52));
 
-  // ── 換算レート情報 ──────────────────────────
+  // 換算レート情報
   lines.push("");
   lines.push("【換算レート】");
-
   const currencies=["USD","EUR","GBP"];
   let anyRate=false;
   for(const cur of currencies){
     const rate=getRate(cur);
     if(rate!==null){
-      // 例：「換算レートTTS：　2025年5月12日　\158.42/USD」
       lines.push(`換算レート${currentRateType}：\t${dateJa}\t¥${rate.toFixed(2)}/${cur}`);
       anyRate=true;
     }
   }
-  if(!anyRate) lines.push("（レート未入力）");
+  if(!anyRate)lines.push("（レート未入力）");
 
   lines.push("");
   lines.push("=".repeat(52));
 
-  // ── 明細 ─────────────────────────────────
+  // 明細
   for(let i=1;i<=groupCount;i++){
     const el=document.getElementById(`group-${i}`);
     if(!el)continue;
     const country=document.getElementById(`country-${i}`).value;
     if(!country||!PRICE_TABLE[country])continue;
 
-    const p  =PRICE_TABLE[country];
-    const cur=p.currency;
+    const p   =PRICE_TABLE[country];
+    const cur =p.currency;
     const rate=getRate(cur);
 
     lines.push("");
     lines.push(`▼ ${country}（${cur}）`);
     lines.push("-".repeat(44));
+
+    function jpyStr(v){
+      return rate!==null?`\t（${roundValue(v*rate,rounding).toLocaleString()} 円）`:"";
+    }
 
     // 協定単価
     lines.push("【協定単価】");
@@ -844,9 +872,6 @@ function generateCopyText(){
     const sMileageF =mileage *p.mileage;
     const contractTotal=sMandayF+sOvertimeF+sMileageF;
 
-    function jpyStr(v){
-      return rate!==null?`\t（${roundValue(v*rate,rounding).toLocaleString()} 円）`:"";
-    }
     if(manday>0)
       lines.push(`技術料：\t${cur}${p.manday.toFixed(2)} x ${manday}日 = ${cur}${sMandayF.toFixed(2)}`+jpyStr(sMandayF));
     if(overtime>0)
@@ -885,18 +910,14 @@ function generateCopyText(){
       }
     }
 
-    // グループ小計
     const grandForeign=contractTotal+expenseTotal;
     const jpyTotal=rate!==null
-      ?` → ${roundValue(grandForeign*rate,rounding).toLocaleString()} 円`:""
+      ?` → ${roundValue(grandForeign*rate,rounding).toLocaleString()} 円`:"";
     lines.push(`  小計：${cur}${grandForeign.toFixed(2)}${jpyTotal}`);
     hasAny=true;
   }
 
-  if(!hasAny){
-    alert("明細を入力してください。");
-    return;
-  }
+  if(!hasAny){alert("明細を入力してください。");return;}
 
   // 総合計
   lines.push("");
@@ -985,11 +1006,18 @@ function clearAll(){
   document.getElementById("groupList").innerHTML="";
   ["rateUSD","rateEUR","rateGBP"].forEach(id=>{document.getElementById(id).value="";});
   document.getElementById("copyArea").style.display="none";
-  document.getElementById("copyBtn").style.display="none";
+  document.getElementById("copyBtn").style.display ="none";
+  // localStorageも削除
+  ["rateUSD","rateEUR","rateGBP","rounding","rateType"].forEach(key=>{
+    localStorage.removeItem(key);
+  });
   groupCount=0;
   recalcTotal();
 }
 
+// =========================
+// キー操作
+// =========================
 document.addEventListener("keydown",function(e){
   const tag=document.activeElement.tagName;
   const isInput=(tag==="INPUT"||tag==="TEXTAREA"||tag==="SELECT");
