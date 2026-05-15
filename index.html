@@ -822,11 +822,8 @@ function openRate(){
   const yy=String(date.getFullYear()).slice(-2);
   const mm=String(date.getMonth()+1).padStart(2,'0');
   const dd=String(date.getDate()).padStart(2,'0');
-  if(count>0)alert("休業日のため "+date.getFullYear()+"-"+mm+"-"+dd+"（営業日）を表示します");
-  window.open("https://www.murc-kawasesouba.jp/fx/past/index.php?id="+yy+mm+dd,"_blank");
-  setTimeout(()=>{
-    alert("ページが表示されない場合は、さらに前日のレートを確認してください。");
-  },500);
+  if(count>0)alert("休業日のため "+date.getFullYear()+"-"+mm+"-"+dd+"（営業日）を表示します\nページが表示されない場合は、さらに前日のレートを確認してください。");
+window.open("https://www.murc-kawasesouba.jp/fx/past/index.php?id="+yy+mm+dd,"_blank");
 }
 
 // =========================
