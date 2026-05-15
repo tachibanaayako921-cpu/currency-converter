@@ -471,7 +471,6 @@
       <div class="quick-calc-result" id="quickResult">－</div>
     </div>
 
-    <!-- 換算レートコピー欄 -->
     <div class="quick-calc-rate-row">
       <input type="text" id="quickRateText" readonly value="レート未入力" class="disabled-look">
       <button id="quickRateCopyBtn" type="button" class="is-disabled" onclick="copyQuickRate()">📋</button>
@@ -567,7 +566,7 @@ const CHINA_LOCAL_EXPENSE = { accommodation: 56.00, dailyAllowance: 20.00 };
 let groupCount      = 0;
 let currentRateType = "TTS";
 let currentAgency   = "local";
-let quickRateEnabled = false;  // ✅ コピー可能状態をフラグで管理
+let quickRateEnabled = false;
 
 // =========================
 // localStorage 保存・復元
@@ -643,7 +642,7 @@ function updateQuickRateText(currency, rate){
 }
 
 function copyQuickRate(){
-  if(!quickRateEnabled) return;  // ✅ フラグで判定
+  if(!quickRateEnabled) return;
   const inp = document.getElementById("quickRateText");
   const btn = document.getElementById("quickRateCopyBtn");
   const text = inp.value;
@@ -859,6 +858,15 @@ function addGroup(){
                 <td class="subtotal-cell" id="sub-manday-j-${gid}">-</td>
               </tr>
               <tr>
+                <td class="label-cell">技術料</td>
+                <td class="unit-cell" id="price-mandayH-${gid}">-</td>
+                <td><input type="number" id="mandayH-${gid}" min="0" step="0.5" placeholder="0"
+                  oninput="calcGroup(${gid})"></td>
+                <td class="unit-cell">H</td>
+                <td class="subtotal-cell" id="sub-mandayH-f-${gid}">-</td>
+                <td class="subtotal-cell" id="sub-mandayH-j-${gid}">-</td>
+              </tr>
+              <tr>
                 <td class="label-cell">時間外</td>
                 <td class="unit-cell" id="price-overtime-${gid}">-</td>
                 <td><input type="number" id="overtime-${gid}" min="0" step="0.5" placeholder="0"
@@ -994,8 +1002,9 @@ function onCountryChange(gid){
   const hourlyDisp=isJPY?`¥${p.hourly.toLocaleString()}`:`${cur} ${p.hourly.toFixed(2)}`;
 
   infoEl.style.display="block";
-  infoEl.innerHTML=`通貨: <span>${cur}</span> ／ 技術料単価: <span>${mandayDisp}</span> ／ 時間外単価(/H): <span>${hourlyDisp}</span> ／ ${mileageInfo}`;
+  infoEl.innerHTML=`通貨: <span>${cur}</span> ／ 技術料単価(日): <span>${mandayDisp}</span> ／ 技術料/時間外単価(/H): <span>${hourlyDisp}</span> ／ ${mileageInfo}`;
   document.getElementById(`price-manday-${gid}`).textContent  =mandayDisp;
+  document.getElementById(`price-mandayH-${gid}`).textContent =hourlyDisp;
   document.getElementById(`price-overtime-${gid}`).textContent=hourlyDisp;
   secCont.style.display="block";
   subEl.style.display  ="block";
@@ -1037,13 +1046,17 @@ function calcGroup(gid){
   const isLocalChina=(currentAgency==="local"&&country==="China");
 
   const manday  =parseFloat(document.getElementById(`manday-${gid}`).value)  ||0;
+  const mandayH =parseFloat(document.getElementById(`mandayH-${gid}`).value) ||0;
   const overtime=parseFloat(document.getElementById(`overtime-${gid}`).value)||0;
-  const sMandayF  =manday*p.manday;
+  const sMandayF  =manday  *p.manday;
+  const sMandayHF =mandayH *p.hourly;
   const sOvertimeF=overtime*p.hourly;
 
   document.getElementById(`sub-manday-f-${gid}`).textContent  =fmtF(cur,sMandayF);
+  document.getElementById(`sub-mandayH-f-${gid}`).textContent =fmtF(cur,sMandayHF);
   document.getElementById(`sub-overtime-f-${gid}`).textContent=fmtF(cur,sOvertimeF);
   document.getElementById(`sub-manday-j-${gid}`).innerHTML  =fmtJ(sMandayF,  rate,rounding,isJPY);
+  document.getElementById(`sub-mandayH-j-${gid}`).innerHTML =fmtJ(sMandayHF, rate,rounding,isJPY);
   document.getElementById(`sub-overtime-j-${gid}`).innerHTML=fmtJ(sOvertimeF,rate,rounding,isJPY);
 
   let sMileageF=0;
@@ -1080,7 +1093,7 @@ function calcGroup(gid){
   document.getElementById(`sub-transport-f-${gid}`).textContent=fmtF(cur,sTransportF);
   document.getElementById(`sub-transport-j-${gid}`).innerHTML  =fmtJ(sTransportF,rate,rounding,isJPY);
 
-  const grandForeign=sMandayF+sOvertimeF+sMileageF+expenseTotal;
+  const grandForeign=sMandayF+sMandayHF+sOvertimeF+sMileageF+expenseTotal;
   const subEl=document.getElementById(`groupSubtotal-${gid}`);
   let html;
   if(isJPY){
@@ -1148,6 +1161,7 @@ function generateCompare(){
     body.className="compare-body";
 
     const manday  =parseFloat(document.getElementById(`manday-${i}`).value)  ||0;
+    const mandayH =parseFloat(document.getElementById(`mandayH-${i}`).value) ||0;
     const overtime=parseFloat(document.getElementById(`overtime-${i}`).value)||0;
     const mileage =parseFloat(document.getElementById(`mileage-${i}`).value) ||0;
 
@@ -1177,6 +1191,11 @@ function generateCompare(){
     tbody.innerHTML+=makeCompareRow("技術料",
       oIsJPY?`¥${op.manday.toLocaleString()}`:`${ocur} ${op.manday.toFixed(2)}`,
       manday,"日",fmtF(ocur,sMandayF),fmtJval(sMandayF,orate,rounding,oIsJPY));
+
+    const sMandayHF=mandayH*op.hourly;
+    tbody.innerHTML+=makeCompareRow("技術料",
+      oIsJPY?`¥${op.hourly.toLocaleString()}`:`${ocur} ${op.hourly.toFixed(2)}`,
+      mandayH,"H",fmtF(ocur,sMandayHF),fmtJval(sMandayHF,orate,rounding,oIsJPY));
 
     const sOvertimeF=overtime*op.hourly;
     tbody.innerHTML+=makeCompareRow("時間外",
@@ -1223,7 +1242,7 @@ function generateCompare(){
     area.appendChild(block);
 
     updateCompareSubtotal(cpfx,ocur,oIsJPY,orate,rounding,
-      sMandayF,sOvertimeF,sMileageF,initHotel,initDaily,initTransport);
+      sMandayF,sMandayHF,sOvertimeF,sMileageF,initHotel,initDaily,initTransport);
   }
 
   if(!hasAny){ alert("明細を入力してください。"); return; }
@@ -1282,19 +1301,21 @@ function onCompareExpenseInput(cpfx,cur,isJPY,_cur,rate,rounding,gid){
   if(!country||!PRICE_TABLE[otherAgency][country])return;
   const op=PRICE_TABLE[otherAgency][country];
   const manday  =parseFloat(document.getElementById(`manday-${gid}`).value)  ||0;
+  const mandayH =parseFloat(document.getElementById(`mandayH-${gid}`).value) ||0;
   const overtime=parseFloat(document.getElementById(`overtime-${gid}`).value)||0;
   const mileage =parseFloat(document.getElementById(`mileage-${gid}`).value) ||0;
   const sMandayF  =manday  *op.manday;
+  const sMandayHF =mandayH *op.hourly;
   const sOvertimeF=overtime*op.hourly;
   let sMileageF=0;
   if(op.mileageType==="km"||op.mileageType==="mile"||op.mileageType==="perday"){
     sMileageF=mileage*op.mileage;
   }
-  updateCompareSubtotal(cpfx,cur,isJPY,rate,rounding,sMandayF,sOvertimeF,sMileageF,hotel,daily,transport);
+  updateCompareSubtotal(cpfx,cur,isJPY,rate,rounding,sMandayF,sMandayHF,sOvertimeF,sMileageF,hotel,daily,transport);
 }
 
-function updateCompareSubtotal(cpfx,cur,isJPY,rate,rounding,sMandayF,sOvertimeF,sMileageF,hotel,daily,transport){
-  const grand=sMandayF+sOvertimeF+sMileageF+hotel+daily+transport;
+function updateCompareSubtotal(cpfx,cur,isJPY,rate,rounding,sMandayF,sMandayHF,sOvertimeF,sMileageF,hotel,daily,transport){
+  const grand=sMandayF+sMandayHF+sOvertimeF+sMileageF+hotel+daily+transport;
   const subEl=document.getElementById(`${cpfx}-subtotal`);
   if(!subEl)return;
   let html;
@@ -1431,12 +1452,15 @@ function generateCopyLines(){
 
     makeDivider(area,"【協定単価】");
     const manday  =parseFloat(document.getElementById(`manday-${i}`).value)  ||0;
+    const mandayH =parseFloat(document.getElementById(`mandayH-${i}`).value) ||0;
     const overtime=parseFloat(document.getElementById(`overtime-${i}`).value)||0;
     const sMandayF  =manday  *p.manday;
+    const sMandayHF =mandayH *p.hourly;
     const sOvertimeF=overtime*p.hourly;
     const mp=isJPY?`¥${p.manday.toLocaleString()}`:`${cur}${p.manday.toFixed(2)}`;
     const hp=isJPY?`¥${p.hourly.toLocaleString()}`:`${cur}${p.hourly.toFixed(2)}`;
     if(manday>0)   makeSplitRow(area,`技術料：${mp} x ${manday}日 = ${ff(sMandayF)}`,  jpyText(sMandayF));
+    if(mandayH>0)  makeSplitRow(area,`技術料：${hp} x ${mandayH}H = ${ff(sMandayHF)}`, jpyText(sMandayHF));
     if(overtime>0) makeSplitRow(area,`時間外：${hp} x ${overtime}H = ${ff(sOvertimeF)}`,jpyText(sOvertimeF));
     if(p.mileageType==="km"||p.mileageType==="mile"||p.mileageType==="perday"){
       const mileage=parseFloat(document.getElementById(`mileage-${i}`).value)||0;
