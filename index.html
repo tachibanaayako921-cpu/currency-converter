@@ -137,10 +137,11 @@
   }
   .group-subtotal .jpy { color: #d63384; font-size: 1.1em; }
 
+  /* ✅ 依頼先タブ（明細入力欄内） */
   .agency-tabs {
     display: flex;
     gap: 6px;
-    margin-bottom: 10px;
+    margin-bottom: 12px;
   }
   .agency-tabs button {
     flex: 1;
@@ -280,7 +281,6 @@
     opacity: 0.4;
     cursor: not-allowed;
   }
-  /* ✅ クリアボタン */
   .quick-clear-btn {
     padding: 9px 12px;
     font-size: 14px;
@@ -418,18 +418,9 @@
 
 <h2>外貨換算・見積アプリ</h2>
 
-<!-- 為替レート設定 -->
+<!-- 為替レート設定（✅ 依頼先タブを削除） -->
 <div class="card">
   <h3>📅 為替レート設定</h3>
-
-  <label>依頼先:</label>
-  <div class="agency-tabs no-print">
-    <button id="tab-local" class="active" onclick="selectAgency('local')">Local Agency</button>
-    <button id="tab-sgs"   onclick="selectAgency('sgs')">SGS</button>
-  </div>
-  <div id="agencyLabel" style="font-weight:bold; font-size:0.9em; color:#28a745; margin-bottom:6px; display:none;">
-    依頼先：Local Agency
-  </div>
 
   <label>日付:</label>
   <div style="display:flex; gap:8px; align-items:center; margin-bottom:10px;">
@@ -477,7 +468,6 @@
   <!-- 簡易換算欄 -->
   <div class="quick-calc no-print">
     <div class="quick-calc-label">💱 簡易換算</div>
-    <!-- ✅ 入力行にクリアボタンを追加 -->
     <div class="quick-calc-row">
       <input type="number" id="quickAmount" min="0" step="0.01"
         placeholder="金額を入力" oninput="calcQuick()">
@@ -490,17 +480,28 @@
       <span class="quick-calc-arrow">→</span>
       <div class="quick-calc-result" id="quickResult">－</div>
     </div>
-
     <div class="quick-calc-rate-row">
-      <input type="text" id="quickRateText" readonly value="レート未入力" class="disabled-look">
+      <input type="text" id="quickRateText" readonly inputmode="none"
+        value="レート未入力" class="disabled-look">
       <button id="quickRateCopyBtn" type="button" class="is-disabled" onclick="copyQuickRate()">📋</button>
     </div>
   </div>
 </div>
 
-<!-- 明細入力（✅ 「国を追加」ボタン削除） -->
+<!-- 明細入力（✅ 依頼先タブをここに移動） -->
 <div class="card">
   <h3>📋 明細入力</h3>
+
+  <!-- ✅ 依頼先タブ -->
+  <label>依頼先:</label>
+  <div class="agency-tabs no-print">
+    <button id="tab-local" class="active" onclick="selectAgency('local')">Local Agency</button>
+    <button id="tab-sgs"   onclick="selectAgency('sgs')">SGS</button>
+  </div>
+  <div id="agencyLabel" style="font-weight:bold; font-size:0.9em; color:#28a745; margin-bottom:10px; display:none;">
+    依頼先：Local Agency
+  </div>
+
   <div id="groupList"></div>
 </div>
 
@@ -516,7 +517,7 @@
   <div class="compare-area" id="compareArea"></div>
 </div>
 
-<!-- ✅ 操作ボタン：全クリアのみ -->
+<!-- 操作ボタン -->
 <div class="card no-print">
   <div style="display:flex; gap:5px; flex-wrap:wrap;">
     <button class="btn-danger" style="flex:1;" onclick="clearAll()">全クリア</button>
@@ -528,6 +529,7 @@
   <h3>📋 コピー用テキスト</h3>
   <div style="display:flex; gap:5px; align-items:center; flex-wrap:wrap;">
     <button class="btn-warning" onclick="generateCopyLines()">テキストを生成</button>
+    <button class="btn-primary" id="copyAllBtn" onclick="copyAllText()" style="display:none;">📋 生成テキストを全コピー</button>
     <span class="copy-success" id="copySuccess">✅ コピーしました！</span>
   </div>
   <div class="copy-lines-area" id="copyLinesArea"></div>
@@ -622,7 +624,10 @@ function loadSettings() {
   if (date)     document.getElementById("date").value     = date;
   calcQuick();
 }
-window.addEventListener("load", loadSettings);
+window.addEventListener("load", function(){
+  loadSettings();
+  if(groupCount===0) addGroup();
+});
 
 // =========================
 // 簡易換算
@@ -648,7 +653,6 @@ function calcQuick(){
   updateQuickRateText(currency, rate);
 }
 
-// ✅ 簡易換算クリア
 function clearQuick(){
   document.getElementById("quickAmount").value="";
   document.getElementById("quickResult").textContent="－";
@@ -798,6 +802,9 @@ function isJapaneseHoliday(date){
   return false;
 }
 
+// =========================
+// 為替ページを開く
+// =========================
 function openRate(){
   const input=document.getElementById("date").value;
   if(!input){alert("日付を入力してください");return;}
@@ -817,6 +824,9 @@ function openRate(){
   const dd=String(date.getDate()).padStart(2,'0');
   if(count>0)alert("休業日のため "+date.getFullYear()+"-"+mm+"-"+dd+"（営業日）を表示します");
   window.open("https://www.murc-kawasesouba.jp/fx/past/index.php?id="+yy+mm+dd,"_blank");
+  setTimeout(()=>{
+    alert("ページが表示されない場合は、さらに前日のレートを確認してください。");
+  },500);
 }
 
 // =========================
@@ -848,7 +858,7 @@ function getCountriesForAgency(agency){ return Object.keys(PRICE_TABLE[agency]);
 function getMileageLabel(t){ return t==="mile"?"mile":t==="perday"?"日":"km"; }
 
 // =========================
-// グループ追加（初期表示用・ページロード時に自動追加）
+// グループ追加
 // =========================
 function addGroup(){
   groupCount++;
@@ -1145,6 +1155,9 @@ function recalcAll(){
   }
 }
 
+// =========================
+// 比較表示
+// =========================
 function generateCompare(){
   const otherAgency = currentAgency==="local"?"sgs":"local";
   const otherLabel  = otherAgency==="local"?"Local Agency":"SGS";
@@ -1367,6 +1380,9 @@ function closeCompare(){
   document.getElementById("compareArea").innerHTML="";
 }
 
+// =========================
+// コピー行DOM生成ヘルパー
+// =========================
 function makeDivider(area,text){
   const div=document.createElement("div");
   div.className="copy-line-divider";
@@ -1378,6 +1394,7 @@ function makeSingleRow(area,text){
   row.className="copy-line-row";
   const inp=document.createElement("input");
   inp.type="text"; inp.className="copy-line-input";
+  inp.setAttribute("inputmode","none");
   inp.value=text; inp.readOnly=true;
   inp.addEventListener("click",function(){ this.select(); });
   inp.addEventListener("focus",function(){ this.select(); });
@@ -1390,10 +1407,13 @@ function makeSingleRow(area,text){
 function makeSplitRow(area,textForeign,jpyNumberText){
   const row=document.createElement("div");
   row.className="copy-line-row-split";
+
   const colF=document.createElement("div"); colF.className="col-foreign";
   const lblF=document.createElement("span"); lblF.className="col-label foreign"; lblF.textContent="外貨";
   const inpF=document.createElement("input");
-  inpF.type="text"; inpF.className="copy-line-input"; inpF.value=textForeign; inpF.readOnly=true;
+  inpF.type="text"; inpF.className="copy-line-input";
+  inpF.setAttribute("inputmode","none");
+  inpF.value=textForeign; inpF.readOnly=true;
   inpF.addEventListener("click",function(){ this.select(); });
   inpF.addEventListener("focus",function(){ this.select(); });
   const btnF=document.createElement("button");
@@ -1405,6 +1425,7 @@ function makeSplitRow(area,textForeign,jpyNumberText){
   const lblJ=document.createElement("span"); lblJ.className="col-label jpy"; lblJ.textContent="円換算";
   const inpJ=document.createElement("input");
   inpJ.type="text"; inpJ.className="copy-line-input";
+  inpJ.setAttribute("inputmode","none");
   inpJ.value=jpyNumberText!==null?jpyNumberText:"レート未入力"; inpJ.readOnly=true;
   if(jpyNumberText===null)inpJ.style.color="#aaa";
   inpJ.addEventListener("click",function(){ this.select(); });
@@ -1421,6 +1442,9 @@ function makeSplitRow(area,textForeign,jpyNumberText){
   area.appendChild(row);
 }
 
+// =========================
+// コピー用テキスト生成
+// =========================
 function generateCopyLines(){
   const dateStr =document.getElementById("date").value;
   const dateJa  =formatDateJa(dateStr);
@@ -1537,9 +1561,70 @@ function generateCopyLines(){
       }
     }
   }
+
   area.style.display="block";
+  document.getElementById("copyAllBtn").style.display="inline-block";
 }
 
+// =========================
+// 生成テキストを全コピー
+// =========================
+function copyAllText(){
+  const area=document.getElementById("copyLinesArea");
+  if(!area||area.style.display==="none"){ alert("先にテキストを生成してください。"); return; }
+
+  const lines=[];
+  area.childNodes.forEach(node=>{
+    if(!node.classList) return;
+    if(node.classList.contains("copy-line-divider")){
+      lines.push(node.textContent.trim());
+      return;
+    }
+    if(node.classList.contains("copy-line-row")){
+      const inp=node.querySelector("input.copy-line-input");
+      if(inp&&inp.value) lines.push(inp.value);
+      return;
+    }
+    if(node.classList.contains("copy-line-row-split")){
+      const inputs=node.querySelectorAll("input.copy-line-input");
+      const parts=[];
+      inputs.forEach((inp,idx)=>{
+        if(inp.value&&inp.value!=="レート未入力"){
+          if(idx===1) parts.push(inp.value+"円");
+          else        parts.push(inp.value);
+        }
+      });
+      if(parts.length>0) lines.push(parts.join("　"));
+      return;
+    }
+  });
+
+  const text=lines.join("\n");
+  if(!text){ alert("コピーするテキストがありません。"); return; }
+
+  const btn=document.getElementById("copyAllBtn");
+  const orig=btn.textContent;
+  const showFlash=()=>{
+    btn.textContent="✅ コピーしました！";
+    btn.style.background="#28a745";
+    setTimeout(()=>{
+      btn.textContent=orig;
+      btn.style.background="";
+    },1500);
+  };
+  navigator.clipboard.writeText(text).then(showFlash).catch(()=>{
+    const ta=document.createElement("textarea");
+    ta.value=text; ta.style.position="fixed"; ta.style.opacity="0";
+    document.body.appendChild(ta);
+    ta.select(); document.execCommand("copy");
+    document.body.removeChild(ta);
+    showFlash();
+  });
+}
+
+// =========================
+// 1行コピー
+// =========================
 function copyLine(inputEl,btnEl){
   const text=inputEl.value;
   const showFlash=()=>{
@@ -1571,6 +1656,7 @@ function clearAll(){
   ["rateUSD","rateEUR","rateGBP"].forEach(id=>{document.getElementById(id).value="";});
   document.getElementById("copyLinesArea").style.display="none";
   document.getElementById("copyLinesArea").innerHTML="";
+  document.getElementById("copyAllBtn").style.display="none";
   document.getElementById("compareCard").style.display="none";
   closeCompare();
   ["rateUSD","rateEUR","rateGBP","rounding","rateType","date","agency"].forEach(key=>{
@@ -1579,14 +1665,13 @@ function clearAll(){
   document.getElementById("date").value="";
   clearQuick();
   groupCount=0;
-  // ✅ 全クリア後にグループを1つ自動追加
   addGroup();
 }
 
-// ✅ ページロード時にグループを1つ自動追加
-window.addEventListener("load", function(){
-  loadSettings();
-  if(groupCount===0) addGroup();
+document.addEventListener("keydown",function(e){
+  const tag=document.activeElement.tagName;
+  const isInput=(tag==="INPUT"||tag==="TEXTAREA"||tag==="SELECT");
+  if(e.key==="Escape"&&!isInput){if(confirm("全クリアしますか？"))clearAll();}
 });
 </script>
 </body>
