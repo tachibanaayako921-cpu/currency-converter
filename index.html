@@ -5,80 +5,110 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="外貨換算">
-<meta name="theme-color" content="#f8f9fa">
-<title>外貨換算・見積アプリ</title>
+<meta name="apple-mobile-web-app-title" content="レートらくだ君">
+<meta name="theme-color" content="#FFF8EC">
+<title>レートらくだ君 〜外貨換算アプリ〜</title>
 <style>
   * { box-sizing: border-box; }
   body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     padding: 15px;
     line-height: 1.6;
-    background-color: #f8f9fa;
-    color: #333;
+    background-color: #FFF8EC; /* ✅ クリーム色背景 */
+    color: #4A3A2A;
     max-width: 680px;
     margin: 0 auto;
   }
-  h2 { font-size: 1.4em; color: #000; border-left: 5px solid #007bff; padding-left: 10px; margin-bottom: 15px; }
-  h3 { font-size: 1.1em; margin-top: 20px; margin-bottom: 8px; color: #444; }
-  label { display: block; font-weight: bold; font-size: 0.85em; margin-bottom: 3px; color: #555; }
+  /* ✅ ヘッダー（タイトル＋ラクダ君） */
+  .app-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 18px;
+    padding: 10px 14px;
+    background: linear-gradient(135deg, #FFF8EC 0%, #FBEDD4 100%);
+    border-radius: 12px;
+    border: 2px solid #E0C9A6;
+  }
+  .app-header img {
+    width: 64px;
+    height: 64px;
+    flex-shrink: 0;
+  }
+  .app-header .title-block { flex: 1; min-width: 0; }
+  .app-header h1 {
+    font-size: 1.2em;
+    color: #8C5A2E;
+    margin: 0 0 2px 0;
+    font-weight: bold;
+  }
+  .app-header .subtitle {
+    font-size: 0.78em;
+    color: #B8845C;
+    margin: 0;
+  }
+
+  h3 { font-size: 1.1em; margin-top: 20px; margin-bottom: 8px; color: #8C5A2E; }
+  label { display: block; font-weight: bold; font-size: 0.85em; margin-bottom: 3px; color: #6B4A2A; }
   input, select {
     width: 100%;
     padding: 10px;
     font-size: 16px;
-    border: 1px solid #ccc;
+    border: 1px solid #D4B896;
     border-radius: 6px;
     background: #fff;
     margin-bottom: 10px;
   }
-  input:focus, select:focus { outline: none; border-color: #007bff; }
+  input:focus, select:focus { outline: none; border-color: #C9925B; }
   button {
     padding: 10px 15px;
     font-size: 15px;
     border-radius: 6px;
     border: none;
-    background-color: #e0e0e0;
+    background-color: #E8DCC4;
+    color: #5A4028;
     cursor: pointer;
     margin: 3px 2px;
     -webkit-tap-highlight-color: transparent;
     transition: opacity 0.2s;
   }
   button:active { opacity: 0.7; }
-  .btn-primary   { background-color: #007bff; color: white; font-weight: bold; }
-  .btn-success   { background-color: #28a745; color: white; }
-  .btn-danger    { background-color: #dc3545; color: white; }
-  .btn-secondary { background-color: #6c757d; color: white; }
-  .btn-warning   { background-color: #fd7e14; color: white; font-weight: bold; }
-  .btn-info      { background-color: #17a2b8; color: white; font-weight: bold; }
+  .btn-primary   { background-color: #C9925B; color: white; font-weight: bold; }
+  .btn-success   { background-color: #A68152; color: white; }
+  .btn-danger    { background-color: #C0625A; color: white; }
+  .btn-secondary { background-color: #8C7355; color: white; }
+  .btn-warning   { background-color: #E8A05C; color: white; font-weight: bold; }
+  .btn-info      { background-color: #7FB3D5; color: white; font-weight: bold; }
   .btn-full { width: 100%; margin-top: 5px; }
 
   .card {
     background: white;
-    border: 1px solid #ddd;
-    border-radius: 8px;
+    border: 1px solid #E0C9A6;
+    border-radius: 10px;
     padding: 15px;
     margin-bottom: 15px;
+    box-shadow: 0 1px 3px rgba(184, 132, 92, 0.08);
   }
 
   .rate-display {
-    background: #e8f4fd;
-    border: 1px solid #bee5eb;
+    background: #FBEDD4;
+    border: 1px solid #E0C9A6;
     border-radius: 6px;
     padding: 10px 14px;
     font-size: 0.88em;
     margin-bottom: 10px;
     line-height: 1.8;
   }
-  .rate-display span { font-weight: bold; color: #0056b3; }
+  .rate-display span { font-weight: bold; color: #8C5A2E; }
 
   .group-block {
-    border: 2px solid #007bff;
+    border: 2px solid #C9925B;
     border-radius: 8px;
     margin-bottom: 16px;
     overflow: hidden;
   }
   .group-header {
-    background: #007bff;
+    background: #C9925B;
     color: white;
     padding: 10px 14px;
     display: flex;
@@ -96,35 +126,35 @@
     margin-top: 4px;
   }
   .detail-table th {
-    background: #f0f4f8;
+    background: #FBEDD4;
     padding: 8px 10px;
     text-align: left;
     font-size: 0.82em;
-    color: #555;
-    border-bottom: 1px solid #ddd;
+    color: #6B4A2A;
+    border-bottom: 1px solid #E0C9A6;
   }
   .detail-table td {
     padding: 8px 6px;
-    border-bottom: 1px solid #eee;
+    border-bottom: 1px solid #F0E4D0;
     vertical-align: middle;
   }
   .detail-table tr:last-child td { border-bottom: none; }
   .detail-table input { margin-bottom: 0; padding: 7px 8px; font-size: 15px; }
-  .subtotal-cell { text-align: right; font-weight: bold; color: #d63384; white-space: nowrap; min-width: 110px; }
-  .label-cell    { white-space: nowrap; color: #333; font-weight: bold; min-width: 80px; }
-  .unit-cell     { color: #888; font-size: 0.82em; white-space: nowrap; min-width: 60px; }
+  .subtotal-cell { text-align: right; font-weight: bold; color: #B8625A; white-space: nowrap; min-width: 110px; }
+  .label-cell    { white-space: nowrap; color: #4A3A2A; font-weight: bold; min-width: 80px; }
+  .unit-cell     { color: #A68B6E; font-size: 0.82em; white-space: nowrap; min-width: 60px; }
 
   .section-label {
     font-size: 0.78em;
     font-weight: bold;
     color: #fff;
-    background: #6c757d;
+    background: #8C7355;
     padding: 3px 10px;
     border-radius: 3px;
     margin: 10px 0 4px;
     display: inline-block;
   }
-  .section-label.expense { background: #fd7e14; }
+  .section-label.expense { background: #E8A05C; }
 
   .group-subtotal {
     text-align: right;
@@ -132,12 +162,11 @@
     font-size: 0.95em;
     margin-top: 10px;
     padding-top: 8px;
-    border-top: 2px solid #ddd;
-    color: #333;
+    border-top: 2px solid #E0C9A6;
+    color: #4A3A2A;
   }
-  .group-subtotal .jpy { color: #d63384; font-size: 1.1em; }
+  .group-subtotal .jpy { color: #B8625A; font-size: 1.1em; }
 
-  /* ✅ 依頼先タブ（明細入力欄内） */
   .agency-tabs {
     display: flex;
     gap: 6px;
@@ -147,16 +176,16 @@
     flex: 1;
     padding: 8px;
     font-size: 14px;
-    background: #e0e0e0;
-    color: #333;
+    background: #E8DCC4;
+    color: #6B4A2A;
     border-radius: 6px;
     border: 2px solid transparent;
     font-weight: bold;
   }
   .agency-tabs button.active {
-    background: #28a745;
+    background: #A68152;
     color: white;
-    border-color: #1e7e34;
+    border-color: #8C6A3E;
   }
 
   .rate-type-tabs {
@@ -168,22 +197,22 @@
     flex: 1;
     padding: 8px;
     font-size: 14px;
-    background: #e0e0e0;
-    color: #333;
+    background: #E8DCC4;
+    color: #6B4A2A;
     border-radius: 6px;
     border: 2px solid transparent;
     font-weight: bold;
   }
   .rate-type-tabs button.active {
-    background: #007bff;
+    background: #C9925B;
     color: white;
-    border-color: #0056b3;
+    border-color: #8C5A2E;
   }
 
   /* ── 簡易換算欄 ── */
   .quick-calc {
-    background: #f0f4f8;
-    border: 1px solid #d0dbe8;
+    background: #FBEDD4;
+    border: 1px solid #E0C9A6;
     border-radius: 8px;
     padding: 12px 14px;
     margin-top: 12px;
@@ -191,7 +220,7 @@
   .quick-calc-label {
     font-size: 0.82em;
     font-weight: bold;
-    color: #555;
+    color: #6B4A2A;
     margin-bottom: 8px;
   }
   .quick-calc-row {
@@ -212,7 +241,7 @@
     padding: 10px;
   }
   .quick-calc-arrow {
-    color: #888;
+    color: #A68B6E;
     font-size: 1.2em;
     flex-shrink: 0;
   }
@@ -220,12 +249,12 @@
     flex: 2;
     font-size: 1.15em;
     font-weight: bold;
-    color: #d63384;
+    color: #B8625A;
     text-align: right;
     white-space: nowrap;
   }
   .quick-calc-result.no-rate {
-    color: #aaa;
+    color: #B8A88E;
     font-size: 0.9em;
     font-weight: normal;
   }
@@ -240,35 +269,35 @@
     font-family: monospace;
     font-size: 0.88em;
     padding: 8px 10px;
-    border: 1px solid #ccc;
+    border: 1px solid #D4B896;
     border-radius: 6px;
     background: #fff;
-    color: #333;
+    color: #4A3A2A;
     cursor: pointer;
     margin-bottom: 0;
     caret-color: transparent;
     min-width: 0;
   }
   .quick-calc-rate-row input:focus {
-    border-color: #007bff;
+    border-color: #C9925B;
     outline: none;
-    background: #e8f4fd;
+    background: #FBEDD4;
   }
   .quick-calc-rate-row input.copied {
-    background: #d4edda;
-    border-color: #28a745;
+    background: #D8E8C4;
+    border-color: #8FA85A;
     transition: background 0.15s;
   }
   .quick-calc-rate-row input.disabled-look {
-    background: #f8f8f8;
-    color: #aaa;
+    background: #F5EDDF;
+    color: #B8A88E;
     cursor: not-allowed;
   }
   .quick-calc-rate-row button {
     padding: 7px 10px;
     font-size: 13px;
     white-space: nowrap;
-    background: #6c757d;
+    background: #8C7355;
     color: white;
     border-radius: 6px;
     border: none;
@@ -284,8 +313,8 @@
   .quick-clear-btn {
     padding: 9px 12px;
     font-size: 14px;
-    background: #e0e0e0;
-    color: #555;
+    background: #E8DCC4;
+    color: #6B4A2A;
     border-radius: 6px;
     border: none;
     cursor: pointer;
@@ -301,13 +330,13 @@
     margin-top: 10px;
   }
   .compare-block {
-    border: 2px solid #17a2b8;
+    border: 2px solid #7FB3D5;
     border-radius: 8px;
     margin-bottom: 14px;
     overflow: hidden;
   }
   .compare-header {
-    background: #17a2b8;
+    background: #7FB3D5;
     color: white;
     padding: 8px 14px;
     font-weight: bold;
@@ -320,16 +349,16 @@
     font-size: 0.9em;
   }
   .compare-table th {
-    background: #e8f9fc;
+    background: #E8F2F8;
     padding: 7px 8px;
     text-align: left;
     font-size: 0.82em;
-    color: #555;
-    border-bottom: 1px solid #bee5eb;
+    color: #4A6B82;
+    border-bottom: 1px solid #B8D4E8;
   }
   .compare-table td {
     padding: 7px 6px;
-    border-bottom: 1px solid #eee;
+    border-bottom: 1px solid #F0E4D0;
     vertical-align: middle;
   }
   .compare-table tr:last-child td { border-bottom: none; }
@@ -337,9 +366,9 @@
     margin-bottom: 0;
     padding: 5px 8px;
     font-size: 14px;
-    border: 1px solid #ccc;
+    border: 1px solid #D4B896;
     border-radius: 4px;
-    background: #fffbe6;
+    background: #FFFCF5;
   }
   .compare-subtotal {
     text-align: right;
@@ -347,16 +376,16 @@
     font-size: 0.95em;
     margin-top: 8px;
     padding-top: 6px;
-    border-top: 2px solid #bee5eb;
-    color: #333;
+    border-top: 2px solid #B8D4E8;
+    color: #4A3A2A;
   }
-  .compare-subtotal .jpy { color: #d63384; }
+  .compare-subtotal .jpy { color: #B8625A; }
   .compare-na {
-    background: #f8d7da;
-    border: 1px solid #f5c6cb;
+    background: #F8D8D4;
+    border: 1px solid #E8B8B0;
     border-radius: 6px;
     padding: 10px 14px;
-    color: #721c24;
+    color: #8C3A30;
     font-size: 0.9em;
     font-weight: bold;
   }
@@ -364,12 +393,12 @@
   /* ── コピー行エリア ── */
   .copy-lines-area { margin-top: 10px; display: none; }
   .copy-line-header {
-    font-size: 0.8em; color: #888; margin-bottom: 6px;
-    padding: 4px 6px; background: #f0f4f8; border-radius: 4px; font-weight: bold;
+    font-size: 0.8em; color: #A68B6E; margin-bottom: 6px;
+    padding: 4px 6px; background: #FBEDD4; border-radius: 4px; font-weight: bold;
   }
   .copy-line-divider {
-    font-size: 0.8em; font-weight: bold; color: #555;
-    background: #f0f4f8; padding: 5px 10px; border-radius: 4px; margin: 8px 0 3px;
+    font-size: 0.8em; font-weight: bold; color: #6B4A2A;
+    background: #FBEDD4; padding: 5px 10px; border-radius: 4px; margin: 8px 0 3px;
   }
   .copy-line-row { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
   .copy-line-row-split { display: flex; align-items: center; gap: 4px; margin-bottom: 4px; }
@@ -379,26 +408,26 @@
     font-size: 0.72em; font-weight: bold; white-space: nowrap;
     color: #fff; padding: 2px 6px; border-radius: 3px; flex-shrink: 0;
   }
-  .col-label.foreign { background: #0056b3; }
-  .col-label.jpy     { background: #d63384; }
+  .col-label.foreign { background: #8C5A2E; }
+  .col-label.jpy     { background: #B8625A; }
   .copy-line-input {
     flex: 1; font-family: monospace; font-size: 0.88em;
-    padding: 8px 10px !important; border: 1px solid #ccc !important;
-    border-radius: 6px; background: #fff; color: #333;
+    padding: 8px 10px !important; border: 1px solid #D4B896 !important;
+    border-radius: 6px; background: #fff; color: #4A3A2A;
     cursor: pointer; margin-bottom: 0 !important;
     caret-color: transparent; min-width: 0;
   }
-  .copy-line-input:focus { border-color: #007bff !important; outline: none; background: #e8f4fd; }
-  .copy-line-input.copied { background: #d4edda !important; border-color: #28a745 !important; transition: background 0.15s; }
+  .copy-line-input:focus { border-color: #C9925B !important; outline: none; background: #FBEDD4; }
+  .copy-line-input.copied { background: #D8E8C4 !important; border-color: #8FA85A !important; transition: background 0.15s; }
   .copy-line-btn {
     padding: 7px 10px; font-size: 13px; white-space: nowrap;
-    background: #6c757d; color: white; border-radius: 6px;
+    background: #8C7355; color: white; border-radius: 6px;
     border: none; cursor: pointer; flex-shrink: 0;
   }
   .copy-line-btn:active { opacity: 0.7; }
-  .copy-success { color: #28a745; font-size: 0.85em; font-weight: bold; margin-left: 8px; display: none; }
+  .copy-success { color: #8FA85A; font-size: 0.85em; font-weight: bold; margin-left: 8px; display: none; }
   .jpy-suffix {
-    font-size: 0.85em; font-weight: bold; color: #d63384;
+    font-size: 0.85em; font-weight: bold; color: #B8625A;
     white-space: nowrap; flex-shrink: 0;
   }
 
@@ -406,19 +435,27 @@
     button, .no-print, .copy-lines-area, .quick-calc { display: none !important; }
     body { max-width: 100%; padding: 0; background: white; }
     .card { border: 1px solid #ccc; }
+    .app-header { background: white !important; border: 1px solid #C9925B; }
     .group-block { border: 1px solid #333; }
-    .group-header { background: #333 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .group-header { background: #8C5A2E !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     .section-label { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    .compare-block { border: 1px solid #17a2b8; }
-    .compare-header { background: #17a2b8 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .compare-block { border: 1px solid #7FB3D5; }
+    .compare-header { background: #7FB3D5 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   }
 </style>
 </head>
 <body>
 
-<h2>外貨換算・見積アプリ</h2>
+<!-- ✅ ヘッダー：レートらくだ君＋タイトル -->
+<div class="app-header">
+  <img src="rakuda.png" alt="レートらくだ君">
+  <div class="title-block">
+    <h1>レートらくだ君</h1>
+    <p class="subtitle">〜外貨換算アプリ〜</p>
+  </div>
+</div>
 
-<!-- 為替レート設定（✅ 依頼先タブを削除） -->
+<!-- 為替レート設定 -->
 <div class="card">
   <h3>📅 為替レート設定</h3>
 
@@ -434,7 +471,7 @@
     <button id="tab-TTB" onclick="selectRateType('TTB')">TTB（買レート）</button>
     <button id="tab-TTM" onclick="selectRateType('TTM')">TTM（仲値）</button>
   </div>
-  <div id="rateTypeLabel" style="font-weight:bold; font-size:0.9em; color:#007bff; margin-bottom:6px; display:none;">
+  <div id="rateTypeLabel" style="font-weight:bold; font-size:0.9em; color:#C9925B; margin-bottom:6px; display:none;">
     適用レート：TTS
   </div>
 
@@ -488,17 +525,16 @@
   </div>
 </div>
 
-<!-- 明細入力（✅ 依頼先タブをここに移動） -->
+<!-- 明細入力 -->
 <div class="card">
   <h3>📋 明細入力</h3>
 
-  <!-- ✅ 依頼先タブ -->
   <label>依頼先:</label>
   <div class="agency-tabs no-print">
     <button id="tab-local" class="active" onclick="selectAgency('local')">Local Agency</button>
     <button id="tab-sgs"   onclick="selectAgency('sgs')">SGS</button>
   </div>
-  <div id="agencyLabel" style="font-weight:bold; font-size:0.9em; color:#28a745; margin-bottom:10px; display:none;">
+  <div id="agencyLabel" style="font-weight:bold; font-size:0.9em; color:#A68152; margin-bottom:10px; display:none;">
     依頼先：Local Agency
   </div>
 
@@ -823,7 +859,7 @@ function openRate(){
   const mm=String(date.getMonth()+1).padStart(2,'0');
   const dd=String(date.getDate()).padStart(2,'0');
   if(count>0)alert("休業日のため "+date.getFullYear()+"-"+mm+"-"+dd+"（営業日）を表示します\nページが表示されない場合は、さらに前日のレートを確認してください。");
-window.open("https://www.murc-kawasesouba.jp/fx/past/index.php?id="+yy+mm+dd,"_blank");
+  window.open("https://www.murc-kawasesouba.jp/fx/past/index.php?id="+yy+mm+dd,"_blank");
 }
 
 // =========================
@@ -847,7 +883,7 @@ function fmtF(cur,v){
 }
 function fmtJ(v,rate,rounding,isJPY){
   if(isJPY){if(v===0)return"-";return`${Math.round(v).toLocaleString()} 円`;}
-  if(rate===null)return`<span style="color:#aaa;">-</span>`;
+  if(rate===null)return`<span style="color:#B8A88E;">-</span>`;
   if(v===0)return"-";
   return`${roundValue(v*rate,rounding).toLocaleString()} 円`;
 }
@@ -866,7 +902,7 @@ function addGroup(){
     <div class="group-block" id="group-${gid}">
       <div class="group-header">
         <span id="groupTitle-${gid}">国を選択してください</span>
-        <button style="padding:4px 12px;font-size:13px;background:#fff;color:#dc3545;
+        <button style="padding:4px 12px;font-size:13px;background:#fff;color:#C0625A;
           border-radius:4px;border:none;cursor:pointer;" onclick="removeGroup(${gid})">削除</button>
       </div>
       <div class="group-body">
@@ -1134,13 +1170,13 @@ function calcGroup(gid){
   const subEl=document.getElementById(`groupSubtotal-${gid}`);
   let html;
   if(isJPY){
-    html=`合計: <span style="color:#0056b3;">¥${Math.round(grandForeign).toLocaleString()}</span> → <span class="jpy">${Math.round(grandForeign).toLocaleString()} 円</span>`;
+    html=`合計: <span style="color:#8C5A2E;">¥${Math.round(grandForeign).toLocaleString()}</span> → <span class="jpy">${Math.round(grandForeign).toLocaleString()} 円</span>`;
   } else {
-    html=`合計: <span style="color:#0056b3;">${cur} ${nfmt2(grandForeign)}</span>`;
+    html=`合計: <span style="color:#8C5A2E;">${cur} ${nfmt2(grandForeign)}</span>`;
     if(rate!==null){
       html+=` → <span class="jpy">${roundValue(grandForeign*rate,rounding).toLocaleString()} 円</span>`;
     } else {
-      html+=` <span style="color:#999;">（${cur}レートを入力してください）</span>`;
+      html+=` <span style="color:#B8A88E;">（${cur}レートを入力してください）</span>`;
     }
   }
   subEl.innerHTML=html;
@@ -1320,7 +1356,7 @@ function makeExpenseRow(cpfx,key,cur,initVal,rate,rounding,isJPY,label,gid){
 
 function fmtJval(v,rate,rounding,isJPY){
   if(isJPY){if(v===0)return"-";return`${Math.round(v).toLocaleString()} 円`;}
-  if(rate===null)return`<span style="color:#aaa;">-</span>`;
+  if(rate===null)return`<span style="color:#B8A88E;">-</span>`;
   if(v===0)return"-";
   return`${roundValue(v*rate,rounding).toLocaleString()} 円`;
 }
@@ -1360,13 +1396,13 @@ function updateCompareSubtotal(cpfx,cur,isJPY,rate,rounding,sMandayF,sMandayHF,s
   if(!subEl)return;
   let html;
   if(isJPY){
-    html=`合計: <span style="color:#0056b3;">¥${Math.round(grand).toLocaleString()}</span> → <span class="jpy">${Math.round(grand).toLocaleString()} 円</span>`;
+    html=`合計: <span style="color:#8C5A2E;">¥${Math.round(grand).toLocaleString()}</span> → <span class="jpy">${Math.round(grand).toLocaleString()} 円</span>`;
   } else {
-    html=`合計: <span style="color:#0056b3;">${cur} ${nfmt2(grand)}</span>`;
+    html=`合計: <span style="color:#8C5A2E;">${cur} ${nfmt2(grand)}</span>`;
     if(rate!==null){
       html+=` → <span class="jpy">${roundValue(grand*rate,rounding).toLocaleString()} 円</span>`;
     } else {
-      html+=` <span style="color:#999;">（${cur}レートを入力してください）</span>`;
+      html+=` <span style="color:#B8A88E;">（${cur}レートを入力してください）</span>`;
     }
   }
   subEl.innerHTML=html;
@@ -1424,7 +1460,7 @@ function makeSplitRow(area,textForeign,jpyNumberText){
   inpJ.type="text"; inpJ.className="copy-line-input";
   inpJ.setAttribute("inputmode","none");
   inpJ.value=jpyNumberText!==null?jpyNumberText:"レート未入力"; inpJ.readOnly=true;
-  if(jpyNumberText===null)inpJ.style.color="#aaa";
+  if(jpyNumberText===null)inpJ.style.color="#B8A88E";
   inpJ.addEventListener("click",function(){ this.select(); });
   inpJ.addEventListener("focus",function(){ this.select(); });
   const btnJ=document.createElement("button");
@@ -1603,7 +1639,7 @@ function copyAllText(){
   const orig=btn.textContent;
   const showFlash=()=>{
     btn.textContent="✅ コピーしました！";
-    btn.style.background="#28a745";
+    btn.style.background="#8FA85A";
     setTimeout(()=>{
       btn.textContent=orig;
       btn.style.background="";
