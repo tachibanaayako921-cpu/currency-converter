@@ -280,6 +280,20 @@
     opacity: 0.4;
     cursor: not-allowed;
   }
+  /* ✅ クリアボタン */
+  .quick-clear-btn {
+    padding: 9px 12px;
+    font-size: 14px;
+    background: #e0e0e0;
+    color: #555;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    flex-shrink: 0;
+    margin: 0;
+    white-space: nowrap;
+  }
+  .quick-clear-btn:active { opacity: 0.7; }
 
   /* ── 比較表示エリア ── */
   .compare-area {
@@ -383,6 +397,10 @@
   }
   .copy-line-btn:active { opacity: 0.7; }
   .copy-success { color: #28a745; font-size: 0.85em; font-weight: bold; margin-left: 8px; display: none; }
+  .jpy-suffix {
+    font-size: 0.85em; font-weight: bold; color: #d63384;
+    white-space: nowrap; flex-shrink: 0;
+  }
 
   @media print {
     button, .no-print, .copy-lines-area, .quick-calc { display: none !important; }
@@ -459,6 +477,7 @@
   <!-- 簡易換算欄 -->
   <div class="quick-calc no-print">
     <div class="quick-calc-label">💱 簡易換算</div>
+    <!-- ✅ 入力行にクリアボタンを追加 -->
     <div class="quick-calc-row">
       <input type="number" id="quickAmount" min="0" step="0.01"
         placeholder="金額を入力" oninput="calcQuick()">
@@ -467,6 +486,7 @@
         <option value="EUR">EUR</option>
         <option value="GBP">GBP</option>
       </select>
+      <button type="button" class="quick-clear-btn" onclick="clearQuick()" title="クリア">✕</button>
       <span class="quick-calc-arrow">→</span>
       <div class="quick-calc-result" id="quickResult">－</div>
     </div>
@@ -478,11 +498,10 @@
   </div>
 </div>
 
-<!-- 明細入力 -->
+<!-- 明細入力（✅ 「国を追加」ボタン削除） -->
 <div class="card">
   <h3>📋 明細入力</h3>
   <div id="groupList"></div>
-  <button class="btn-success btn-full" onclick="addGroup()">＋ 国を追加</button>
 </div>
 
 <!-- 比較表示 -->
@@ -497,12 +516,10 @@
   <div class="compare-area" id="compareArea"></div>
 </div>
 
-<!-- 操作ボタン -->
+<!-- ✅ 操作ボタン：全クリアのみ -->
 <div class="card no-print">
   <div style="display:flex; gap:5px; flex-wrap:wrap;">
-    <button class="btn-primary" style="flex:1;" onclick="recalcAll()">再計算</button>
-    <button class="btn-secondary" onclick="window.print()">🖨️ 印刷</button>
-    <button class="btn-danger" onclick="clearAll()">全クリア</button>
+    <button class="btn-danger" style="flex:1;" onclick="clearAll()">全クリア</button>
   </div>
 </div>
 
@@ -569,6 +586,16 @@ let currentAgency   = "local";
 let quickRateEnabled = false;
 
 // =========================
+// 数値フォーマット用ヘルパー
+// =========================
+function nfmt2(v){
+  return v.toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+function nfmtQty(v){
+  return v.toLocaleString("en-US",{maximumFractionDigits:4});
+}
+
+// =========================
 // localStorage 保存・復元
 // =========================
 function saveSettings() {
@@ -618,7 +645,16 @@ function calcQuick(){
     resultEl.textContent=`${jpy.toLocaleString()} 円`;
     resultEl.className="quick-calc-result";
   }
+  updateQuickRateText(currency, rate);
+}
 
+// ✅ 簡易換算クリア
+function clearQuick(){
+  document.getElementById("quickAmount").value="";
+  document.getElementById("quickResult").textContent="－";
+  document.getElementById("quickResult").className="quick-calc-result";
+  const currency=document.getElementById("quickCurrency").value;
+  const rate=getRate(currency);
   updateQuickRateText(currency, rate);
 }
 
@@ -701,9 +737,6 @@ function selectRateType(type) {
   calcQuick();
 }
 
-// =========================
-// 日付を日本語形式に変換
-// =========================
 function formatDateJa(dateStr) {
   if(!dateStr) return "日付未入力";
   const [y,m,d]=dateStr.split("-").map(Number);
@@ -765,9 +798,6 @@ function isJapaneseHoliday(date){
   return false;
 }
 
-// =========================
-// 為替ページを開く
-// =========================
 function openRate(){
   const input=document.getElementById("date").value;
   if(!input){alert("日付を入力してください");return;}
@@ -806,7 +836,7 @@ function roundValue(v,mode){
 }
 function fmtF(cur,v){
   if(cur==="JPY")return v>0?`¥${Math.round(v).toLocaleString()}`:"-";
-  return v>0?`${cur} ${v.toFixed(2)}`:"-";
+  return v>0?`${cur} ${nfmt2(v)}`:"-";
 }
 function fmtJ(v,rate,rounding,isJPY){
   if(isJPY){if(v===0)return"-";return`${Math.round(v).toLocaleString()} 円`;}
@@ -818,7 +848,7 @@ function getCountriesForAgency(agency){ return Object.keys(PRICE_TABLE[agency]);
 function getMileageLabel(t){ return t==="mile"?"mile":t==="perday"?"日":"km"; }
 
 // =========================
-// グループ追加
+// グループ追加（初期表示用・ページロード時に自動追加）
 // =========================
 function addGroup(){
   groupCount++;
@@ -899,7 +929,7 @@ function addGroup(){
             <tbody>
               <tr id="row-hotel-fixed-${gid}" style="display:none;">
                 <td class="label-cell">宿泊費</td>
-                <td class="unit-cell">USD ${CHINA_LOCAL_EXPENSE.accommodation.toFixed(2)}</td>
+                <td class="unit-cell">USD ${nfmt2(CHINA_LOCAL_EXPENSE.accommodation)}</td>
                 <td><input type="number" id="hotel-fixed-${gid}" min="0" step="1" placeholder="0"
                   oninput="calcGroup(${gid})"></td>
                 <td class="unit-cell">泊</td>
@@ -917,7 +947,7 @@ function addGroup(){
               </tr>
               <tr id="row-daily-fixed-${gid}" style="display:none;">
                 <td class="label-cell">日当</td>
-                <td class="unit-cell">USD ${CHINA_LOCAL_EXPENSE.dailyAllowance.toFixed(2)}</td>
+                <td class="unit-cell">USD ${nfmt2(CHINA_LOCAL_EXPENSE.dailyAllowance)}</td>
                 <td><input type="number" id="daily-fixed-${gid}" min="0" step="1" placeholder="0"
                   oninput="calcGroup(${gid})"></td>
                 <td class="unit-cell">日</td>
@@ -993,13 +1023,13 @@ function onCountryChange(gid){
   titleEl.textContent=`${country}　（${cur}）`;
 
   let mileageInfo="";
-  if(p.mileageType==="km")          mileageInfo=`交通費(/km): <span>${p.mileage.toFixed(2)}</span>`;
-  else if(p.mileageType==="mile")   mileageInfo=`交通費(/mile): <span>${p.mileage.toFixed(2)}</span>`;
-  else if(p.mileageType==="perday") mileageInfo=`交通費(/day): <span>${p.mileage.toFixed(2)}</span>`;
+  if(p.mileageType==="km")          mileageInfo=`交通費(/km): <span>${nfmt2(p.mileage)}</span>`;
+  else if(p.mileageType==="mile")   mileageInfo=`交通費(/mile): <span>${nfmt2(p.mileage)}</span>`;
+  else if(p.mileageType==="perday") mileageInfo=`交通費(/day): <span>${nfmt2(p.mileage)}</span>`;
   else                              mileageInfo=`交通費: <span>実費</span>`;
 
-  const mandayDisp=isJPY?`¥${p.manday.toLocaleString()}`:`${cur} ${p.manday.toFixed(2)}`;
-  const hourlyDisp=isJPY?`¥${p.hourly.toLocaleString()}`:`${cur} ${p.hourly.toFixed(2)}`;
+  const mandayDisp=isJPY?`¥${p.manday.toLocaleString()}`:`${cur} ${nfmt2(p.manday)}`;
+  const hourlyDisp=isJPY?`¥${p.hourly.toLocaleString()}`:`${cur} ${nfmt2(p.hourly)}`;
 
   infoEl.style.display="block";
   infoEl.innerHTML=`通貨: <span>${cur}</span> ／ 技術料単価(日): <span>${mandayDisp}</span> ／ 技術料/時間外単価(/H): <span>${hourlyDisp}</span> ／ ${mileageInfo}`;
@@ -1012,7 +1042,7 @@ function onCountryChange(gid){
   if(p.mileageType==="km"||p.mileageType==="mile"||p.mileageType==="perday"){
     document.getElementById(`row-mileage-${gid}`).style.display="";
     document.getElementById(`unit-mileage-${gid}`).textContent=getMileageLabel(p.mileageType);
-    const pd=isJPY?`¥${p.mileage.toLocaleString()}`:`${cur} ${p.mileage.toFixed(2)}`;
+    const pd=isJPY?`¥${p.mileage.toLocaleString()}`:`${cur} ${nfmt2(p.mileage)}`;
     document.getElementById(`price-mileage-${gid}`).textContent=pd;
   }
 
@@ -1099,7 +1129,7 @@ function calcGroup(gid){
   if(isJPY){
     html=`合計: <span style="color:#0056b3;">¥${Math.round(grandForeign).toLocaleString()}</span> → <span class="jpy">${Math.round(grandForeign).toLocaleString()} 円</span>`;
   } else {
-    html=`合計: <span style="color:#0056b3;">${cur} ${grandForeign.toFixed(2)}</span>`;
+    html=`合計: <span style="color:#0056b3;">${cur} ${nfmt2(grandForeign)}</span>`;
     if(rate!==null){
       html+=` → <span class="jpy">${roundValue(grandForeign*rate,rounding).toLocaleString()} 円</span>`;
     } else {
@@ -1189,25 +1219,25 @@ function generateCompare(){
 
     const sMandayF=manday*op.manday;
     tbody.innerHTML+=makeCompareRow("技術料",
-      oIsJPY?`¥${op.manday.toLocaleString()}`:`${ocur} ${op.manday.toFixed(2)}`,
-      manday,"日",fmtF(ocur,sMandayF),fmtJval(sMandayF,orate,rounding,oIsJPY));
+      oIsJPY?`¥${op.manday.toLocaleString()}`:`${ocur} ${nfmt2(op.manday)}`,
+      nfmtQty(manday),"日",fmtF(ocur,sMandayF),fmtJval(sMandayF,orate,rounding,oIsJPY));
 
     const sMandayHF=mandayH*op.hourly;
     tbody.innerHTML+=makeCompareRow("技術料",
-      oIsJPY?`¥${op.hourly.toLocaleString()}`:`${ocur} ${op.hourly.toFixed(2)}`,
-      mandayH,"H",fmtF(ocur,sMandayHF),fmtJval(sMandayHF,orate,rounding,oIsJPY));
+      oIsJPY?`¥${op.hourly.toLocaleString()}`:`${ocur} ${nfmt2(op.hourly)}`,
+      nfmtQty(mandayH),"H",fmtF(ocur,sMandayHF),fmtJval(sMandayHF,orate,rounding,oIsJPY));
 
     const sOvertimeF=overtime*op.hourly;
     tbody.innerHTML+=makeCompareRow("時間外",
-      oIsJPY?`¥${op.hourly.toLocaleString()}`:`${ocur} ${op.hourly.toFixed(2)}`,
-      overtime,"H",fmtF(ocur,sOvertimeF),fmtJval(sOvertimeF,orate,rounding,oIsJPY));
+      oIsJPY?`¥${op.hourly.toLocaleString()}`:`${ocur} ${nfmt2(op.hourly)}`,
+      nfmtQty(overtime),"H",fmtF(ocur,sOvertimeF),fmtJval(sOvertimeF,orate,rounding,oIsJPY));
 
     let sMileageF=0;
     if(op.mileageType==="km"||op.mileageType==="mile"||op.mileageType==="perday"){
       sMileageF=mileage*op.mileage;
       tbody.innerHTML+=makeCompareRow("交通費",
-        oIsJPY?`¥${op.mileage.toLocaleString()}`:`${ocur} ${op.mileage.toFixed(2)}`,
-        mileage,getMileageLabel(op.mileageType),
+        oIsJPY?`¥${op.mileage.toLocaleString()}`:`${ocur} ${nfmt2(op.mileage)}`,
+        nfmtQty(mileage),getMileageLabel(op.mileageType),
         fmtF(ocur,sMileageF),fmtJval(sMileageF,orate,rounding,oIsJPY));
     }
 
@@ -1322,7 +1352,7 @@ function updateCompareSubtotal(cpfx,cur,isJPY,rate,rounding,sMandayF,sMandayHF,s
   if(isJPY){
     html=`合計: <span style="color:#0056b3;">¥${Math.round(grand).toLocaleString()}</span> → <span class="jpy">${Math.round(grand).toLocaleString()} 円</span>`;
   } else {
-    html=`合計: <span style="color:#0056b3;">${cur} ${grand.toFixed(2)}</span>`;
+    html=`合計: <span style="color:#0056b3;">${cur} ${nfmt2(grand)}</span>`;
     if(rate!==null){
       html+=` → <span class="jpy">${roundValue(grand*rate,rounding).toLocaleString()} 円</span>`;
     } else {
@@ -1357,7 +1387,7 @@ function makeSingleRow(area,text){
   row.appendChild(inp); row.appendChild(btn);
   area.appendChild(row);
 }
-function makeSplitRow(area,textForeign,textJpy){
+function makeSplitRow(area,textForeign,jpyNumberText){
   const row=document.createElement("div");
   row.className="copy-line-row-split";
   const colF=document.createElement("div"); colF.className="col-foreign";
@@ -1375,15 +1405,17 @@ function makeSplitRow(area,textForeign,textJpy){
   const lblJ=document.createElement("span"); lblJ.className="col-label jpy"; lblJ.textContent="円換算";
   const inpJ=document.createElement("input");
   inpJ.type="text"; inpJ.className="copy-line-input";
-  inpJ.value=textJpy!==null?textJpy:"レート未入力"; inpJ.readOnly=true;
-  if(textJpy===null)inpJ.style.color="#aaa";
+  inpJ.value=jpyNumberText!==null?jpyNumberText:"レート未入力"; inpJ.readOnly=true;
+  if(jpyNumberText===null)inpJ.style.color="#aaa";
   inpJ.addEventListener("click",function(){ this.select(); });
   inpJ.addEventListener("focus",function(){ this.select(); });
   const btnJ=document.createElement("button");
   btnJ.className="copy-line-btn"; btnJ.textContent="📋";
-  if(textJpy===null){ btnJ.disabled=true; btnJ.style.opacity="0.4"; }
+  if(jpyNumberText===null){ btnJ.disabled=true; btnJ.style.opacity="0.4"; }
   btnJ.addEventListener("click",function(){ copyLine(inpJ,btnJ); });
-  colJ.appendChild(lblJ); colJ.appendChild(inpJ); colJ.appendChild(btnJ);
+  const yenSuffix=document.createElement("span");
+  yenSuffix.className="jpy-suffix"; yenSuffix.textContent="円";
+  colJ.appendChild(lblJ); colJ.appendChild(inpJ); colJ.appendChild(btnJ); colJ.appendChild(yenSuffix);
 
   row.appendChild(colF); row.appendChild(colJ);
   area.appendChild(row);
@@ -1442,13 +1474,16 @@ function generateCopyLines(){
 
     makeDivider(area,`▼ ${country}（${cur}）`);
 
-    function jpyText(v){
-      if(isJPY)return v===0?"-":`${Math.round(v).toLocaleString()} 円`;
+    function jpyNum(v){
+      if(isJPY)return v===0?"-":`${Math.round(v).toLocaleString()}`;
       if(rate===null)return null;
       if(v===0)return"-";
-      return`${roundValue(v*rate,rounding).toLocaleString()} 円`;
+      return`${roundValue(v*rate,rounding).toLocaleString()}`;
     }
-    function ff(v){ return isJPY?(v>0?`¥${Math.round(v).toLocaleString()}`:"-"):(v>0?`${cur}${v.toFixed(2)}`:"-"); }
+    function ff(v){
+      if(isJPY) return v>0?`¥${Math.round(v).toLocaleString()}`:"-";
+      return v>0?`${cur}${nfmt2(v)}`:"-";
+    }
 
     makeDivider(area,"【協定単価】");
     const manday  =parseFloat(document.getElementById(`manday-${i}`).value)  ||0;
@@ -1457,36 +1492,49 @@ function generateCopyLines(){
     const sMandayF  =manday  *p.manday;
     const sMandayHF =mandayH *p.hourly;
     const sOvertimeF=overtime*p.hourly;
-    const mp=isJPY?`¥${p.manday.toLocaleString()}`:`${cur}${p.manday.toFixed(2)}`;
-    const hp=isJPY?`¥${p.hourly.toLocaleString()}`:`${cur}${p.hourly.toFixed(2)}`;
-    if(manday>0)   makeSplitRow(area,`技術料：${mp} x ${manday}日 = ${ff(sMandayF)}`,  jpyText(sMandayF));
-    if(mandayH>0)  makeSplitRow(area,`技術料：${hp} x ${mandayH}H = ${ff(sMandayHF)}`, jpyText(sMandayHF));
-    if(overtime>0) makeSplitRow(area,`時間外：${hp} x ${overtime}H = ${ff(sOvertimeF)}`,jpyText(sOvertimeF));
+    const mp=isJPY?`¥${p.manday.toLocaleString()}`:`${cur}${nfmt2(p.manday)}`;
+    const hp=isJPY?`¥${p.hourly.toLocaleString()}`:`${cur}${nfmt2(p.hourly)}`;
+    if(manday>0)   makeSplitRow(area,`技術料：${mp} x ${nfmtQty(manday)}日 = ${ff(sMandayF)}`,  jpyNum(sMandayF));
+    if(mandayH>0)  makeSplitRow(area,`技術料：${hp} x ${nfmtQty(mandayH)}H = ${ff(sMandayHF)}`, jpyNum(sMandayHF));
+    if(overtime>0) makeSplitRow(area,`時間外：${hp} x ${nfmtQty(overtime)}H = ${ff(sOvertimeF)}`,jpyNum(sOvertimeF));
     if(p.mileageType==="km"||p.mileageType==="mile"||p.mileageType==="perday"){
       const mileage=parseFloat(document.getElementById(`mileage-${i}`).value)||0;
       if(mileage>0){
         const sMF=mileage*p.mileage;
         const ulbl=getMileageLabel(p.mileageType);
-        const mlp=isJPY?`¥${p.mileage.toLocaleString()}`:`${cur}${p.mileage.toFixed(2)}`;
-        makeSplitRow(area,`交通費：${mlp} x ${mileage}${ulbl} = ${ff(sMF)}`,jpyText(sMF));
+        const mlp=isJPY?`¥${p.mileage.toLocaleString()}`:`${cur}${nfmt2(p.mileage)}`;
+        makeSplitRow(area,`交通費：${mlp} x ${nfmtQty(mileage)}${ulbl} = ${ff(sMF)}`,jpyNum(sMF));
       }
     }
 
-    let sHF=0,sDF=0,sTF=0;
     if(lc){
-      sHF=(parseFloat(document.getElementById(`hotel-fixed-${i}`).value)||0)*CHINA_LOCAL_EXPENSE.accommodation;
-      sDF=(parseFloat(document.getElementById(`daily-fixed-${i}`).value)||0)*CHINA_LOCAL_EXPENSE.dailyAllowance;
-      sTF= parseFloat(document.getElementById(`transport-${i}`).value)||0;
+      const hotelN=parseFloat(document.getElementById(`hotel-fixed-${i}`).value)||0;
+      const dailyN=parseFloat(document.getElementById(`daily-fixed-${i}`).value)||0;
+      const sTF= parseFloat(document.getElementById(`transport-${i}`).value)||0;
+      const sHF=hotelN*CHINA_LOCAL_EXPENSE.accommodation;
+      const sDF=dailyN*CHINA_LOCAL_EXPENSE.dailyAllowance;
+      if(hotelN>0||dailyN>0||sTF>0){
+        makeDivider(area,"【実費精算】");
+        if(hotelN>0){
+          const up=`USD${nfmt2(CHINA_LOCAL_EXPENSE.accommodation)}`;
+          makeSplitRow(area,`宿泊費：${up}(定額) x ${nfmtQty(hotelN)}泊 = ${ff(sHF)}`,jpyNum(sHF));
+        }
+        if(dailyN>0){
+          const up=`USD${nfmt2(CHINA_LOCAL_EXPENSE.dailyAllowance)}`;
+          makeSplitRow(area,`日当：${up}(定額) x ${nfmtQty(dailyN)}日 = ${ff(sDF)}`,jpyNum(sDF));
+        }
+        if(sTF>0) makeSplitRow(area,`交通費：${ff(sTF)}（実費）`,jpyNum(sTF));
+      }
     } else {
-      sHF=parseFloat(document.getElementById(`hotel-${i}`).value)    ||0;
-      sDF=parseFloat(document.getElementById(`daily-${i}`).value)    ||0;
-      sTF=parseFloat(document.getElementById(`transport-${i}`).value)||0;
-    }
-    if(sHF>0||sDF>0||sTF>0){
-      makeDivider(area,"【実費精算】");
-      if(sHF>0) makeSplitRow(area,`宿泊費：${ff(sHF)}（実費）`,jpyText(sHF));
-      if(sDF>0) makeSplitRow(area,`日当：${ff(sDF)}（実費）`,  jpyText(sDF));
-      if(sTF>0) makeSplitRow(area,`交通費：${ff(sTF)}（実費）`,jpyText(sTF));
+      const sHF=parseFloat(document.getElementById(`hotel-${i}`).value)    ||0;
+      const sDF=parseFloat(document.getElementById(`daily-${i}`).value)    ||0;
+      const sTF=parseFloat(document.getElementById(`transport-${i}`).value)||0;
+      if(sHF>0||sDF>0||sTF>0){
+        makeDivider(area,"【実費精算】");
+        if(sHF>0) makeSplitRow(area,`宿泊費：${ff(sHF)}（実費）`,jpyNum(sHF));
+        if(sDF>0) makeSplitRow(area,`日当：${ff(sDF)}（実費）`,  jpyNum(sDF));
+        if(sTF>0) makeSplitRow(area,`交通費：${ff(sTF)}（実費）`,jpyNum(sTF));
+      }
     }
   }
   area.style.display="block";
@@ -1529,18 +1577,16 @@ function clearAll(){
     localStorage.removeItem(key);
   });
   document.getElementById("date").value="";
-  document.getElementById("quickAmount").value="";
-  document.getElementById("quickResult").textContent="－";
-  document.getElementById("quickResult").className="quick-calc-result";
-  calcQuick();
+  clearQuick();
   groupCount=0;
+  // ✅ 全クリア後にグループを1つ自動追加
+  addGroup();
 }
 
-document.addEventListener("keydown",function(e){
-  const tag=document.activeElement.tagName;
-  const isInput=(tag==="INPUT"||tag==="TEXTAREA"||tag==="SELECT");
-  if(e.key==="Enter"&&!isInput)recalcAll();
-  if(e.key==="Escape"){if(confirm("全クリアしますか？"))clearAll();}
+// ✅ ページロード時にグループを1つ自動追加
+window.addEventListener("load", function(){
+  loadSettings();
+  if(groupCount===0) addGroup();
 });
 </script>
 </body>
