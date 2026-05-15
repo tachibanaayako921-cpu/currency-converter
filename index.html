@@ -8,13 +8,18 @@
 <meta name="apple-mobile-web-app-title" content="レートらくだ君">
 <meta name="theme-color" content="#FFF8EC">
 <title>レートらくだ君 〜外貨換算アプリ〜</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@500;700;800;900&display=swap" rel="stylesheet">
+
 <style>
   * { box-sizing: border-box; }
   body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     padding: 15px;
     line-height: 1.6;
-    background-color: #FFF8EC; /* ✅ クリーム色背景 */
+    background-color: #FFF8EC;
     color: #4A3A2A;
     max-width: 680px;
     margin: 0 auto;
@@ -23,27 +28,43 @@
   .app-header {
     display: flex;
     align-items: center;
-    gap: 12px;
+    justify-content: center;
+    gap: 16px;
     margin-bottom: 18px;
-    padding: 10px 14px;
+    padding: 14px 18px;
     background: linear-gradient(135deg, #FFF8EC 0%, #FBEDD4 100%);
     border-radius: 12px;
     border: 2px solid #E0C9A6;
   }
   .app-header img {
-    width: 64px;
-    height: 64px;
+    width: 80px;
+    height: 80px;
     flex-shrink: 0;
   }
-  .app-header .title-block { flex: 1; min-width: 0; }
+  .app-header .title-block {
+    text-align: center;
+    flex: 0 1 auto;
+  }
   .app-header h1 {
-    font-size: 1.2em;
+    font-family: 'M PLUS Rounded 1c', sans-serif;
+    font-weight: 900;
+    font-size: 1.9em;
+    letter-spacing: 0.05em;
     color: #8C5A2E;
-    margin: 0 0 2px 0;
-    font-weight: bold;
+    margin: 0 0 4px 0;
+    -webkit-text-stroke: 1px #FFF8EC;
+    text-shadow:
+       2px 2px 0 #FFF8EC,
+      -2px 2px 0 #FFF8EC,
+       2px -2px 0 #FFF8EC,
+      -2px -2px 0 #FFF8EC,
+       3px 3px 0 #E0C9A6;
   }
   .app-header .subtitle {
-    font-size: 0.78em;
+    font-family: 'M PLUS Rounded 1c', sans-serif;
+    font-weight: 700;
+    font-size: 0.9em;
+    letter-spacing: 0.1em;
     color: #B8845C;
     margin: 0;
   }
@@ -59,26 +80,28 @@
     background: #fff;
     margin-bottom: 10px;
   }
-  input:focus, select:focus { outline: none; border-color: #C9925B; }
+  input:focus, select:focus { outline: none; border-color: #2E7AB8; }
+
+  /* ✅ ボタン（ブルー系統一） */
   button {
     padding: 10px 15px;
     font-size: 15px;
     border-radius: 6px;
     border: none;
-    background-color: #E8DCC4;
-    color: #5A4028;
+    background-color: #E0EBF5;
+    color: #1E4E7A;
     cursor: pointer;
     margin: 3px 2px;
     -webkit-tap-highlight-color: transparent;
     transition: opacity 0.2s;
   }
   button:active { opacity: 0.7; }
-  .btn-primary   { background-color: #C9925B; color: white; font-weight: bold; }
-  .btn-success   { background-color: #A68152; color: white; }
+  .btn-primary   { background-color: #2E7AB8; color: white; font-weight: bold; }
+  .btn-success   { background-color: #3D9BE0; color: white; }
   .btn-danger    { background-color: #C0625A; color: white; }
-  .btn-secondary { background-color: #8C7355; color: white; }
-  .btn-warning   { background-color: #E8A05C; color: white; font-weight: bold; }
-  .btn-info      { background-color: #7FB3D5; color: white; font-weight: bold; }
+  .btn-secondary { background-color: #6B8EAE; color: white; }
+  .btn-warning   { background-color: #1E5BA8; color: white; font-weight: bold; }
+  .btn-info      { background-color: #4FA8D8; color: white; font-weight: bold; }
   .btn-full { width: 100%; margin-top: 5px; }
 
   .card {
@@ -167,6 +190,7 @@
   }
   .group-subtotal .jpy { color: #B8625A; font-size: 1.1em; }
 
+  /* ✅ 依頼先タブ */
   .agency-tabs {
     display: flex;
     gap: 6px;
@@ -176,18 +200,19 @@
     flex: 1;
     padding: 8px;
     font-size: 14px;
-    background: #E8DCC4;
-    color: #6B4A2A;
+    background: #E0EBF5;
+    color: #1E4E7A;
     border-radius: 6px;
     border: 2px solid transparent;
     font-weight: bold;
   }
   .agency-tabs button.active {
-    background: #A68152;
+    background: #2E7AB8;
     color: white;
-    border-color: #8C6A3E;
+    border-color: #1E5BA8;
   }
 
+  /* ✅ レート種別タブ */
   .rate-type-tabs {
     display: flex;
     gap: 6px;
@@ -197,16 +222,16 @@
     flex: 1;
     padding: 8px;
     font-size: 14px;
-    background: #E8DCC4;
-    color: #6B4A2A;
+    background: #E0EBF5;
+    color: #1E4E7A;
     border-radius: 6px;
     border: 2px solid transparent;
     font-weight: bold;
   }
   .rate-type-tabs button.active {
-    background: #C9925B;
+    background: #3D9BE0;
     color: white;
-    border-color: #8C5A2E;
+    border-color: #2E7AB8;
   }
 
   /* ── 簡易換算欄 ── */
@@ -279,9 +304,9 @@
     min-width: 0;
   }
   .quick-calc-rate-row input:focus {
-    border-color: #C9925B;
+    border-color: #2E7AB8;
     outline: none;
-    background: #FBEDD4;
+    background: #E8F2F8;
   }
   .quick-calc-rate-row input.copied {
     background: #D8E8C4;
@@ -297,7 +322,7 @@
     padding: 7px 10px;
     font-size: 13px;
     white-space: nowrap;
-    background: #8C7355;
+    background: #6B8EAE;
     color: white;
     border-radius: 6px;
     border: none;
@@ -313,8 +338,8 @@
   .quick-clear-btn {
     padding: 9px 12px;
     font-size: 14px;
-    background: #E8DCC4;
-    color: #6B4A2A;
+    background: #E0EBF5;
+    color: #1E4E7A;
     border-radius: 6px;
     border: none;
     cursor: pointer;
@@ -417,11 +442,11 @@
     cursor: pointer; margin-bottom: 0 !important;
     caret-color: transparent; min-width: 0;
   }
-  .copy-line-input:focus { border-color: #C9925B !important; outline: none; background: #FBEDD4; }
+  .copy-line-input:focus { border-color: #2E7AB8 !important; outline: none; background: #E8F2F8; }
   .copy-line-input.copied { background: #D8E8C4 !important; border-color: #8FA85A !important; transition: background 0.15s; }
   .copy-line-btn {
     padding: 7px 10px; font-size: 13px; white-space: nowrap;
-    background: #8C7355; color: white; border-radius: 6px;
+    background: #6B8EAE; color: white; border-radius: 6px;
     border: none; cursor: pointer; flex-shrink: 0;
   }
   .copy-line-btn:active { opacity: 0.7; }
@@ -451,7 +476,7 @@
   <img src="rakuda.png" alt="レートらくだ君">
   <div class="title-block">
     <h1>レートらくだ君</h1>
-    <p class="subtitle">〜外貨換算アプリ〜</p>
+    <p class="subtitle">〜 外貨換算アプリ 〜</p>
   </div>
 </div>
 
@@ -462,7 +487,7 @@
   <label>日付:</label>
   <div style="display:flex; gap:8px; align-items:center; margin-bottom:10px;">
     <input type="date" id="date" style="margin-bottom:0; flex:1;" onchange="saveSettings(); calcQuick()">
-    <button type="button" onclick="openRate()" style="white-space:nowrap; padding:10px 12px;">為替ページを開く</button>
+    <button type="button" class="btn-secondary" onclick="openRate()" style="white-space:nowrap; padding:10px 12px;">為替ページを開く</button>
   </div>
 
   <label>レート種別:</label>
@@ -471,7 +496,7 @@
     <button id="tab-TTB" onclick="selectRateType('TTB')">TTB（買レート）</button>
     <button id="tab-TTM" onclick="selectRateType('TTM')">TTM（仲値）</button>
   </div>
-  <div id="rateTypeLabel" style="font-weight:bold; font-size:0.9em; color:#C9925B; margin-bottom:6px; display:none;">
+  <div id="rateTypeLabel" style="font-weight:bold; font-size:0.9em; color:#2E7AB8; margin-bottom:6px; display:none;">
     適用レート：TTS
   </div>
 
@@ -534,7 +559,7 @@
     <button id="tab-local" class="active" onclick="selectAgency('local')">Local Agency</button>
     <button id="tab-sgs"   onclick="selectAgency('sgs')">SGS</button>
   </div>
-  <div id="agencyLabel" style="font-weight:bold; font-size:0.9em; color:#A68152; margin-bottom:10px; display:none;">
+  <div id="agencyLabel" style="font-weight:bold; font-size:0.9em; color:#2E7AB8; margin-bottom:10px; display:none;">
     依頼先：Local Agency
   </div>
 
