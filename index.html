@@ -1731,6 +1731,15 @@ document.addEventListener("keydown",function(e){
   const isInput=(tag==="INPUT"||tag==="TEXTAREA"||tag==="SELECT");
   if(e.key==="Escape"&&!isInput){if(confirm("全クリアしますか？"))clearAll();}
 });
+
+ // =========================
+// マウスホイールによる数値変更を防止
+// =========================
+document.addEventListener("wheel", function(e) {
+  if (document.activeElement && document.activeElement.type === "number") {
+    document.activeElement.blur();
+  }
+});
 </script>
 </body>
 </html>
