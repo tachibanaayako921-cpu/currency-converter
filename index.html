@@ -487,11 +487,13 @@
 <div class="card">
   <h3>📅 為替レート設定</h3>
 
-  <label>日付:</label>
-  <div style="display:flex; gap:8px; align-items:center; margin-bottom:10px;">
-    <input type="date" id="date" style="margin-bottom:0; flex:1;" onchange="saveSettings(); calcQuick()">
-    <button type="button" class="btn-secondary" onclick="openRate()" style="white-space:nowrap; padding:10px 12px;">為替ページを開く</button>
-  </div>
+ <label>日付:</label>
+<div style="display:flex; gap:8px; align-items:center; margin-bottom:10px;">
+  <input type="date" id="date" style="margin-bottom:0; flex:1;" onchange="saveSettings(); calcQuick()">
+  <button type="button" class="btn-secondary" onclick="openRate()" style="white-space:nowrap; padding:10px 12px;">為替ページを開く</button>
+  <button type="button" class="btn-primary" onclick="runPAD()" style="white-space:nowrap; padding:10px 12px;">レート自動取得</button>
+</div>
+
 
   <label>レート種別:</label>
   <div class="rate-type-tabs no-print">
@@ -1769,6 +1771,16 @@ document.addEventListener("wheel", function(e) {
     document.activeElement.blur();
   }
 });
+ 
+ // =========================
+// PAD起動
+// =========================
+function runPAD() {
+  // ms-powerautomate:/console/flow/run?environmentid=Default-824ebce5-dba5-4070-9911-126ad050e9be&workflowid=57908930-1ce4-4cdd-abb2-b2bc64e3ccbf&source=Shortcut
+  var padUrl = 'ms-powerautomate://console/flow/run?workflowName=ここにURL';
+  window.location.href = padUrl;
+}
+
 </script>
 </body>
 </html>
