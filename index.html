@@ -27,7 +27,6 @@
     max-width: 680px;
     margin: 0 auto;
   }
-  /* ✅ ヘッダー（タイトル＋ラクダ君） */
   .app-header {
     display: flex;
     align-items: center;
@@ -85,7 +84,6 @@
   }
   input:focus, select:focus { outline: none; border-color: #2E7AB8; }
 
-  /* ✅ ボタン（ブルー系統一） */
   button {
     padding: 10px 15px;
     font-size: 15px;
@@ -193,7 +191,6 @@
   }
   .group-subtotal .jpy { color: #B8625A; font-size: 1.1em; }
 
-  /* ✅ 依頼先タブ */
   .agency-tabs {
     display: flex;
     gap: 6px;
@@ -215,7 +212,6 @@
     border-color: #1E5BA8;
   }
 
-  /* ✅ レート種別タブ */
   .rate-type-tabs {
     display: flex;
     gap: 6px;
@@ -237,7 +233,6 @@
     border-color: #2E7AB8;
   }
 
-  /* ── 簡易換算欄 ── */
   .quick-calc {
     background: #FBEDD4;
     border: 1px solid #E0C9A6;
@@ -352,7 +347,6 @@
   }
   .quick-clear-btn:active { opacity: 0.7; }
 
-  /* ── 比較表示エリア ── */
   .compare-area {
     display: none;
     margin-top: 10px;
@@ -418,7 +412,6 @@
     font-weight: bold;
   }
 
-  /* ── コピー行エリア ── */
   .copy-lines-area { margin-top: 10px; display: none; }
   .copy-line-header {
     font-size: 0.8em; color: #A68B6E; margin-bottom: 6px;
@@ -474,7 +467,7 @@
 </head>
 <body>
 
-<!-- ✅ ヘッダー：レートらくだ君＋タイトル -->
+<!-- ヘッダー -->
 <div class="app-header">
   <img src="rakuda.png" alt="レートらくだ君">
   <div class="title-block">
@@ -487,13 +480,12 @@
 <div class="card">
   <h3>📅 為替レート設定</h3>
 
- <label>日付:</label>
-<div style="display:flex; gap:8px; align-items:center; margin-bottom:10px;">
-  <input type="date" id="date" style="margin-bottom:0; flex:1;" onchange="saveSettings(); calcQuick()">
-  <button type="button" class="btn-secondary" onclick="openRate()" style="white-space:nowrap; padding:10px 12px;">為替ページを開く</button>
-  <button type="button" class="btn-primary" onclick="runPAD()" style="white-space:nowrap; padding:10px 12px;">レート自動取得</button>
-</div>
-
+  <label>日付:</label>
+  <div style="display:flex; gap:8px; align-items:center; margin-bottom:10px;">
+    <input type="date" id="date" style="margin-bottom:0; flex:1;" onchange="saveSettings(); calcQuick()">
+    <button type="button" class="btn-secondary" onclick="openRate()" style="white-space:nowrap; padding:10px 12px;">為替ページを開く</button>
+    <button type="button" class="btn-primary" onclick="runPAD()" style="white-space:nowrap; padding:10px 12px;">レート自動取得</button>
+  </div>
 
   <label>レート種別:</label>
   <div class="rate-type-tabs no-print">
@@ -596,7 +588,7 @@
   <div style="display:flex; gap:5px; align-items:center; flex-wrap:wrap;">
     <button class="btn-warning" onclick="generateCopyLines()">テキストを生成</button>
     <button class="btn-primary" id="copyAllBtn" onclick="copyAllText()" style="display:none;">📋 生成テキストを全コピー</button>
-    <span class="copy-success" id="copySuccess">✅ コピーしました！</span>
+    <span class="copy-success" id="copySuccess">コピーしました！</span>
   </div>
   <div class="copy-lines-area" id="copyLinesArea"></div>
 </div>
@@ -648,9 +640,9 @@ const PRICE_TABLE = {
 
 const CHINA_LOCAL_EXPENSE = { accommodation: 58.00, dailyAllowance: 20.00 };
 
-let groupCount      = 0;
-let currentRateType = "TTS";
-let currentAgency   = "local";
+let groupCount       = 0;
+let currentRateType  = "TTS";
+let currentAgency    = "local";
 let quickRateEnabled = false;
 
 // =========================
@@ -754,7 +746,7 @@ function copyQuickRate(){
   const text = inp.value;
   const showFlash=()=>{
     inp.classList.add("copied");
-    btn.textContent="✅";
+    btn.textContent="OK";
     const msg=document.getElementById("copySuccess");
     msg.style.display="inline";
     setTimeout(()=>{
@@ -891,7 +883,6 @@ function openRate(){
   const dd=String(date.getDate()).padStart(2,'0');
   if(count>0){
     alert("休業日のため "+yyyy+"-"+mm+"-"+dd+"（営業日）を表示します\nページが表示されない場合は、さらに前日のレートを確認してください。");
-    // ✅ 入力欄の日付を営業日に自動更新
     document.getElementById("date").value = `${yyyy}-${mm}-${dd}`;
     saveSettings();
     calcQuick();
@@ -899,6 +890,13 @@ function openRate(){
   window.open("https://www.murc-kawasesouba.jp/fx/past/index.php?id="+yy+mm+dd,"_blank");
 }
 
+// =========================
+// PAD起動
+// =========================
+function runPAD() {
+  var padUrl = 'ms-powerautomate:/console/flow/run?environmentid=Default-824ebce5-dba5-4070-9911-126ad050e9be&workflowid=57908930-1ce4-4cdd-abb2-b2bc64e3ccbf&source=Shortcut';
+  window.location.href = padUrl;
+}
 
 // =========================
 // ユーティリティ
@@ -1515,6 +1513,7 @@ function makeSplitRow(area,textForeign,jpyNumberText){
 
 // =========================
 // コピー用テキスト生成
+// ★ jpyNum: toLocaleString()を使わずコンマなしに修正
 // =========================
 function generateCopyLines(){
   const dateStr =document.getElementById("date").value;
@@ -1540,7 +1539,7 @@ function generateCopyLines(){
 
   const header=document.createElement("div");
   header.className="copy-line-header";
-  header.textContent="▼ 欄をクリックで全選択 → Ctrl+C（Mac: ⌘+C）でコピー　または　📋ボタンで即コピー";
+  header.textContent="▼ 欄をクリックで全選択 → Ctrl+C（Mac: Command+C）でコピー　または　📋ボタンで即コピー";
   area.appendChild(header);
 
   makeDivider(area,"【換算レート】");
@@ -1569,11 +1568,12 @@ function generateCopyLines(){
 
     makeDivider(area,`▼ ${country}（${cur}）`);
 
+    // ★ コンマなし：toLocaleString()を使わない
     function jpyNum(v){
-      if(isJPY)return v===0?"-":`${Math.round(v).toLocaleString()}`;
-      if(rate===null)return null;
-      if(v===0)return"-";
-      return`${roundValue(v*rate,rounding).toLocaleString()}`;
+      if(isJPY) return v===0?"-":`${Math.round(v)}`;
+      if(rate===null) return null;
+      if(v===0) return"-";
+      return `${roundValue(v*rate,rounding)}`;
     }
     function ff(v){
       if(isJPY) return v>0?`¥${Math.round(v).toLocaleString()}`:"-";
@@ -1676,7 +1676,7 @@ function copyAllText(){
   const btn=document.getElementById("copyAllBtn");
   const orig=btn.textContent;
   const showFlash=()=>{
-    btn.textContent="✅ コピーしました！";
+    btn.textContent="コピーしました！";
     btn.style.background="#8FA85A";
     setTimeout(()=>{
       btn.textContent=orig;
@@ -1700,7 +1700,7 @@ function copyLine(inputEl,btnEl){
   const text=inputEl.value;
   const showFlash=()=>{
     inputEl.classList.add("copied");
-    btnEl.textContent="✅";
+    btnEl.textContent="OK";
     const msg=document.getElementById("copySuccess");
     msg.style.display="inline";
     setTimeout(()=>{ inputEl.classList.remove("copied"); btnEl.textContent="📋"; msg.style.display="none"; },1500);
@@ -1711,16 +1711,12 @@ function copyLine(inputEl,btnEl){
 }
 
 // =========================
-// 明細クリア（入力欄は残す）
+// 明細クリア
 // =========================
 function clearGroup(gid){
   if(!confirm("この明細の入力内容をクリアしますか？")) return;
-
-  // 国の選択をリセット
   const countrySel = document.getElementById(`country-${gid}`);
   if(countrySel) countrySel.value = "";
-
-  // 各数量入力欄をクリア
   const inputIds = [
     `manday-${gid}`, `mandayH-${gid}`, `overtime-${gid}`, `mileage-${gid}`,
     `hotel-fixed-${gid}`, `hotel-${gid}`,
@@ -1731,11 +1727,7 @@ function clearGroup(gid){
     const el = document.getElementById(id);
     if(el) el.value = "";
   });
-
-  // 表示状態を初期化（国未選択の状態に戻す）
   onCountryChange(gid);
-
-  // 比較表示が開いていれば閉じる
   closeCompare();
 }
 
@@ -1771,16 +1763,6 @@ document.addEventListener("wheel", function(e) {
     document.activeElement.blur();
   }
 });
- 
- // =========================
-// PAD起動
-// =========================
-function runPAD() {
-  // ms-powerautomate:/console/flow/run?environmentid=Default-824ebce5-dba5-4070-9911-126ad050e9be&workflowid=57908930-1ce4-4cdd-abb2-b2bc64e3ccbf&source=Shortcut
-  var padUrl = 'ms-powerautomate://console/flow/run?workflowName=ここにURL';
-  window.location.href = padUrl;
-}
-
 </script>
 </body>
 </html>
