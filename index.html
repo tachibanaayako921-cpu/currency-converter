@@ -484,7 +484,7 @@
   <div style="display:flex; gap:8px; align-items:center; margin-bottom:10px;">
     <input type="date" id="date" style="margin-bottom:0; flex:1;" onchange="saveSettings(); calcQuick()">
     <button type="button" class="btn-secondary" onclick="openRate()" style="white-space:nowrap; padding:10px 12px;">為替ページを開く</button>
-    <button type="button" class="btn-primary" onclick="runPAD()" style="white-space:nowrap; padding:10px 12px;">レート自動取得</button>
+    <button type="button" class="btn-primary" id="btnAutoFetch" onclick="fetchRatesFromGAS()" style="white-space:nowrap; padding:10px 12px;">レート自動取得</button>
   </div>
 
   <label>レート種別:</label>
@@ -594,6 +594,11 @@
 </div>
 
 <script>
+// ==========================================
+// GAS API URL設定（★デプロイしたURLに書き換えてください）
+// ==========================================
+const GAS_API_URL = "https://script.google.com/macros/s/AKfycbxZu4TUrdFndi5jmVFm7snCr1mGDCH3AaqKMzn6rRF3sfTGVuPNWOT--OEraYuZ74lQLA/exec";
+
 // =========================
 // 協定単価表
 // =========================
@@ -861,28 +866,46 @@ function isJapaneseHoliday(date){
 }
 
 // =========================
+// 営業日計算共通ヘルパー
+// =========================
+function getEffectiveBusinessDate(dateInput) {
+  if (!dateInput) return null;
+  const [iy, im, id] = dateInput.split("-").map(Number);
+  let date = new Date(iy, im - 1, id);
+  let count = 0;
+  while (count < 30) {
+    const w = date.getDay();
+    if (w === 0 || w === 6 || isJapaneseHoliday(date)) {
+      date.setDate(date.getDate() - 1);
+      count++;
+    } else {
+      break;
+    }
+  }
+  return { date, wasAdjusted: count > 0 };
+}
+
+// =========================
 // 為替ページを開く
 // =========================
 function openRate(){
   const input=document.getElementById("date").value;
   if(!input){alert("日付を入力してください");return;}
-  const[iy,im,id]=input.split("-").map(Number);
-  let date=new Date(iy,im-1,id);
   const today=new Date();today.setHours(0,0,0,0);
-  if(date>today){alert("未来の日付は指定できません");return;}
-  let count=0;
-  while(count<30){
-    const w=date.getDay();
-    if(w===0||w===6||isJapaneseHoliday(date)){date.setDate(date.getDate()-1);count++;}
-    else break;
-  }
-  if(count>=30){alert("営業日の特定に失敗しました。");return;}
-  const yyyy=String(date.getFullYear());
-  const yy=yyyy.slice(-2);
-  const mm=String(date.getMonth()+1).padStart(2,'0');
-  const dd=String(date.getDate()).padStart(2,'0');
-  if(count>0){
-    alert("休業日のため "+yyyy+"-"+mm+"-"+dd+"（営業日）を表示します\nページが表示されない場合は、さらに前日のレートを確認してください。");
+  const [iy,im,id]=input.split("-").map(Number);
+  if(new Date(iy,im-1,id) > today){alert("未来の日付は指定できません");return;}
+
+  const res = getEffectiveBusinessDate(input);
+  if(!res){alert("営業日の特定に失敗しました。");return;}
+
+  const date = res.date;
+  const yyyy = String(date.getFullYear());
+  const yy   = yyyy.slice(-2);
+  const mm   = String(date.getMonth()+1).padStart(2,'0');
+  const dd   = String(date.getDate()).padStart(2,'0');
+
+  if(res.wasAdjusted){
+    alert("休業日のため "+yyyy+"-"+mm+"-"+dd+"（直近営業日）を表示します\nページが表示されない場合は、さらに前日のレートを確認してください。");
     document.getElementById("date").value = `${yyyy}-${mm}-${dd}`;
     saveSettings();
     calcQuick();
@@ -890,13 +913,93 @@ function openRate(){
   window.open("https://www.murc-kawasesouba.jp/fx/past/index.php?id="+yy+mm+dd,"_blank");
 }
 
-// =========================
-// PAD起動
-// =========================
-function runPAD() {
-  var padUrl = 'ms-powerautomate:/console/flow/run?environmentid=Default-824ebce5-dba5-4070-9911-126ad050e9be&workflowid=57908930-1ce4-4cdd-abb2-b2bc64e3ccbf&source=Shortcut';
-  window.location.href = padUrl;
+// ==========================================
+// GASを利用した為替レート自動取得
+// ==========================================
+async function fetchRatesFromGAS() {
+  if (!GAS_API_URL || GAS_API_URL.includes("ここにデプロイしたGAS")) {
+    alert("GASのWeb App URLが設定されていません。\nHTMLコード内の GAS_API_URL を設定してください。");
+    return;
+  }
+
+  const input = document.getElementById("date").value;
+  if (!input) {
+    alert("日付を入力してください");
+    return;
+  }
+
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const [iy, im, id] = input.split("-").map(Number);
+  if (new Date(iy, im - 1, id) > today) {
+    alert("未来の日付は指定できません");
+    return;
+  }
+
+  const res = getEffectiveBusinessDate(input);
+  if (!res) { alert("営業日の特定に失敗しました。"); return; }
+
+  const date = res.date;
+  const yyyy = String(date.getFullYear());
+  const yy   = yyyy.slice(-2);
+  const mm   = String(date.getMonth() + 1).padStart(2, '0');
+  const dd   = String(date.getDate()).padStart(2, '0');
+  const dateParam = `${yy}${mm}${dd}`;
+
+  if (res.wasAdjusted) {
+    document.getElementById("date").value = `${yyyy}-${mm}-${dd}`;
+    saveSettings();
+  }
+
+  const btn = document.getElementById("btnAutoFetch");
+  const origText = btn.textContent;
+  btn.textContent = "取得中...";
+  btn.disabled = true;
+
+  try {
+    const response = await fetch(`${GAS_API_URL}?date=${dateParam}`);
+    if (!response.ok) throw new Error("ネットワークエラーが発生しました");
+    
+    const data = await response.json();
+    if (data.error) throw new Error(data.error);
+
+    const typeKey = currentRateType.toLowerCase(); // 'tts', 'ttb', 'ttm'
+
+    let successCount = 0;
+
+    // ★ ここで .toFixed(2) を適用して小数点以下2桁を固定表示
+    if (data.USD && data.USD[typeKey] !== null) {
+      document.getElementById("rateUSD").value = Number(data.USD[typeKey]).toFixed(2);
+      successCount++;
+    }
+    if (data.EUR && data.EUR[typeKey] !== null) {
+      document.getElementById("rateEUR").value = Number(data.EUR[typeKey]).toFixed(2);
+      successCount++;
+    }
+    if (data.GBP && data.GBP[typeKey] !== null) {
+      document.getElementById("rateGBP").value = Number(data.GBP[typeKey]).toFixed(2);
+      successCount++;
+    }
+
+    if (successCount === 0) {
+      throw new Error("為替データ内にレート情報が見つかりませんでした。\n（休業日または未公表の日付の可能性があります）");
+    }
+
+    saveSettings();
+    recalcAll();
+    calcQuick();
+
+    const dateMsg = res.wasAdjusted ? `休業日のため直近営業日（${yyyy}年${mm}月${dd}日）` : `${yyyy}年${mm}月${dd}日`;
+    alert(`${dateMsg} の ${currentRateType} レートを取得しました！`);
+
+  } catch (err) {
+    console.error(err);
+    alert("レートの自動取得に失敗しました:\n" + err.message + "\n\n「為替ページを開く」から手動で確認・入力してください。");
+  } finally {
+    btn.textContent = origText;
+    btn.disabled = false;
+  }
 }
+
 
 // =========================
 // ユーティリティ
@@ -1513,7 +1616,6 @@ function makeSplitRow(area,textForeign,jpyNumberText){
 
 // =========================
 // コピー用テキスト生成
-// ★ jpyNum: toLocaleString()を使わずコンマなしに修正
 // =========================
 function generateCopyLines(){
   const dateStr =document.getElementById("date").value;
@@ -1568,7 +1670,6 @@ function generateCopyLines(){
 
     makeDivider(area,`▼ ${country}（${cur}）`);
 
-    // ★ コンマなし：toLocaleString()を使わない
     function jpyNum(v){
       if(isJPY) return v===0?"-":`${Math.round(v)}`;
       if(rate===null) return null;
